@@ -1,0 +1,9 @@
+**/*.out
+**/*.error
+**/.snakemake
+**/.ipynb_checkpoints
+*~
+**/.DS_Store
+**/._*
+**/__*
+.DS_Store
