@@ -24,15 +24,15 @@ cluster_param={}
 job_resources= job_properties["resources"]
 
 
-if not "mem" in job_resources:
-    warnings.warn("Rule {rule} has no memory specified, set to default.".format(**job_properties))
+#if not "mem" in job_resources:
+#    warnings.warn("Rule {rule} has no memory specified, set to default.".format(**job_properties))
 
 # do something useful with the threads
 cluster_param["threads"] = job_properties.get("threads",1)
 cluster_param['days'] = job_resources.get("days",job_properties["cluster"]['days'])
 cluster_param['hours'] = job_resources.get("hours",job_properties["cluster"]['hours'])
 #cluster_param['mem'] = int(job_resources.get("mem",10))+ #5 #GB + overhead
-cluster_param['name'] = job_properties['rule']
+cluster_param['name'] = "per_chrom"  #job_properties['rule']
 cluster_param['profile'] = job_properties["cluster"]['profile']
 
 # access property defined in the cluster configuration file (Snakemake >=3.6.0)

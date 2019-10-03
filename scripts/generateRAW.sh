@@ -1,1 +1,0 @@
-/home/thibaut/Gallus/Projects/genotype-F2/Scripts/generateRAW.sh

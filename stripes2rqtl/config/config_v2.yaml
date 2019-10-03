@@ -1,0 +1,32 @@
+# config file for stripes2rqtl.snek
+
+## input
+input_folder:
+  "/home/tilman/nas/stripes_AIL_gg6a"
+
+pedigree_file:
+  /home/tilman/nas/pedigree/AIL_pedigree_20190813.tsv
+phenotype_file:
+  /home/tilman/nas/stripes_AIL_gg6a/F15/bw8_nona.csv
+chr_ranks_file:
+  /home/tilman/nas/stripes_AIL_gg6a/F15/stripes_data/input_aux/Index_fastq_contig_chr.txt
+## output:
+outfolder:
+  "home/nas/stripes_AIL_gg6a/stripes2rqtl"
+
+## parameter for format_in_r
+cutoff:
+  10 # minimum number of markers
+binsize:
+  1000000 # size of bins in basepairs, i.e. 1mb
+
+
+## parameter for filter_gt_xo_size
+xo_minsize:
+  3
+
+## parameter for make_rqtl_input:
+generation:
+  08
+jitter:
+  0.2

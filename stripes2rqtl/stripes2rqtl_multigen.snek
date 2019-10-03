@@ -1,0 +1,178 @@
+"""
+Description: snakemake pipeline to format the Stripes output for r/qtl
+Author:      tilman.ronneburg@imbim.uu.se
+Date:        20190801
+"""
+
+import os
+configfile: "config/config_v2.yaml"
+
+#wild = glob_wildcards(os.path.join(config["input_folder"],"F{sample}","stripes_data","founders_annotated.tsv"))
+samples = [i.strip("F") for i in os.listdir(config["input_folder"]) if i.startswith("F")]
+#print(samples)
+#print(wild.sample)
+
+rule all:
+    input:
+        expand(os.path.join(config["outfolder"],"F{sample}", "F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+".csv"), sample=samples)
+        #genotypes =os.path.join(config["outfolder"], "rqtl_genotypes_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb02.csv") ,
+        #phenotypes =os.path.join(config["outfolder"],"rqtl_phenotypes_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb02.csv")
+
+rule remove_empty_genotypes:
+    input:
+        genotypes = os.path.join(config["input_folder"],"F{sample}","stripes_data/with.fam.f2.call2.Genotype/"),
+    output:
+        log = os.path.join(config["outfolder"], "F{sample}","F{sample}_empty_genotypes.txt")
+    params:
+        rm_folder = os.path.join(config["outfolder"], "F{sample}","F{sample}_empty_files/")
+    run:
+        import os
+        import subprocess
+        subprocess.call(["mkdir", params.rm_folder])
+        gts = [i for i in os.listdir(input.genotypes) if i.endswith(".genotype")]
+        with open(output.log, "w") as log_handle:
+            for i in gts:
+                full_path = os.path.join(input.genotypes, i)
+                a = os.stat(full_path).st_size==0
+                if a == True: # if file is empty
+                    subprocess.call(["mv", full_path, params.rm_folder])
+                    subprocess.call(["mv", full_path+"_DIR", params.rm_folder])
+                    log_handle.write(full_path+"\n")
+
+
+rule format_in_r:
+    """ Make genotype matrix and filter for all bins that have fewer than 10 markers.
+        This script contains quite a few sample specific regular expressions & will likely break at some point.
+        Here's to hoping that i will replace it with something generic before it does."""
+    input:
+        genotypes = os.path.join(config["input_folder"],"F{sample}","stripes_data/with.fam.f2.call2.Genotype/"),
+        chr_ranks = os.path.join(config["input_folder"], "F{sample}", "stripes_data/input_aux/Index_fastq_contig_chr.txt"),
+        tiger_out = os.path.join(config["input_folder"],"F{sample}","stripes_data/with.fam.f2.call2.TIGER_OUT/"),
+        rm_log = os.path.join(config["outfolder"], "F{sample}","F{sample}_empty_genotypes.txt")
+    output:
+        os.path.join(config["outfolder"],"F{sample}", "F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+".csv")
+    params:
+        binsize = config["binsize"],
+        cutoff = config["cutoff"]
+    shell:
+        "Rscript --vanilla scripts/format_zy.R  {input.genotypes} {input.tiger_out} {input.chr_ranks} {params.binsize} {params.cutoff} {output}"
+
+rule combine_datasets:
+    """ """
+    input:
+        genotype = expand(os.path.join(config["outfolder"],"F{sample}", "F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+".csv"), sample=samples),
+        pedigree = config["pedigree_file"]
+    output:
+        os.path.join(config["outfolder"],
+                     "all_samples_gt_matrix_FilteredForBinsize"+
+                     str(config["binsize"])+
+                     "_FilteredForXO"+
+                     str(config["xo_minsize"])+
+                     "FilledGaps"+
+                     str(config["fill_gap_threshold"])+
+                     "FilteredForCongruency"+
+                     str(config["congruency_offspring_thresh"])+"_"+str(config["congruency_qual_thresh"])+".csv")
+    params:
+        gap_threshold = config["fill_gap_threshold"],
+        xo_threshold =  config["xo_minsize"]
+    run:
+        import pandas as pd
+        import numpy as np
+        import os
+        from scripts.QC.GT_matrices import Genotypes, Pedigree
+        initial_file = input.pop(0)
+        gt = Genotypes(gt_file=initial_file, pedigree_file=input.pedigree)
+        for i in input.genotype:
+            gt.add_genotypes(gt_file=i)
+        gt.order_matrices()
+        gt.get_congruency_matrix()
+        gt.filter_by_parentage()
+        filled_gaps_gt = gt.fill_gaps(thresh = params.gap_threshold)
+        gt.gt_matrix = filled_gaps_gt.fillna("NA") # set the now filled genotype as the new genotype matrix.
+        # filter out all small double recombinations below threshold, for all samples that are in the selected generations.
+        gt.xo_filter(thresh=params.xo_threshold, strict=False, generations=[]) # if gen == empty, all samples are filtered. ## TODO need to be able to set this from configfile
+        a = gt.apply_filters() # apply filters
+        gt.gt_matrix = a #set filtered genotype_matrix as new gt_matrix
+        filled_gaps_gt = gt.fill_gaps(thresh = params.gap_threshold) #fill in newly created gaps
+        filled_gaps_gt.to_csv(output)
+
+rule make_combined_rqtl_input:
+    input:
+        phenotypes = config["phenotype_file"],
+        genotypes = os.path.join(config["outfolder"],
+                                 "all_samples_gt_matrix_FilteredForBinsize"+
+                                 str(config["binsize"])+
+                                 "_FilteredForXO"+
+                                 str(config["xo_minsize"])+
+                                 "FilledGaps"+
+                                 str(config["fill_gap_threshold"])+
+                                 "FilteredForCongruency"+
+                                 str(config["congruency_offspring_thresh"])+
+                                 "_"+str(config["congruency_qual_thresh"])+".csv")
+    output:
+        genotypes =os.path.join(config["outfolder"],
+                                "all_samples_rqtl_genotypes_FilteredForBinsize"+
+                                str(config["binsize"])+
+                                "_FilteredForXO"+
+                                str(config["xo_minsize"])+
+                                "removedAmb02.csv") ,
+        phenotypes =os.path.join(config["outfolder"],
+                                 "all_samples_rqtl_phenotypes_FilteredForBinsize"+
+                                 str(config["binsize"])+
+                                 "_FilteredForXO"+
+                                 str(config["xo_minsize"])+
+                                 "removedAmb02.csv"),
+    run:
+        pass # TODO implement this?
+
+rule filter_gt_xo_size:
+    """ set all crossovers below 3 mb in size to missing."""
+    input:
+        genotypes = os.path.join(config["outfolder"],"F{sample}","F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+".csv"),
+    output:
+        outfile = os.path.join(config["outfolder"], "F{sample}","F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+".csv"),
+    params:
+        cutoff = config["xo_minsize"]
+    run:
+        from scripts.QC.GT_matrices import Genotypes, Pedigree
+        gt = Genotypes(gt_file=input.genotypes)
+        gt.order_matrices(all_mt=False)
+        gt.xo_filter(thresh=params.cutoff)
+        filtered_matrix = gt.apply_filters()
+        filtered_matrix.to_csv(output.outfile)
+
+
+rule make_rqtl_input:
+    """
+    remove unclear calls that deviate more than the allowed jitter from expected genotypes.
+    format output for R/qtl.
+    """
+    input:
+        genotypes = os.path.join(config["outfolder"],"F{sample}","F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+".csv"),
+        phenotypes = config["phenotype_file"]
+    output:
+        genotypes =os.path.join(config["outfolder"],"F{sample}","F{sample}_rqtl_genotypes_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb02.csv") ,
+        phenotypes =os.path.join(config["outfolder"],"F{sample}","F{sample}_rqtl_phenotypes_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb02.csv") ,
+    params:
+        generation = "{sample}",
+        jitter = config["jitter"]
+    run:
+        import pandas as pd
+        from scripts.downstream_formatting import make_rqtl_input
+        from scripts.downstream_formatting import make_rqtl_geno_input
+        #catch that annoying thing where the leading zero gets truncated:
+        if len(params.generation)==1:
+            generation = "0"+str(params.generation)
+        else:
+            generation = str(params.generation)
+        df = pd.read_csv(input.genotypes)
+        df.index = df["Unnamed: 0"].astype(str)
+        del(df["Unnamed: 0"])
+        #print(df.index)
+        make_rqtl_input(df=df,
+                        gen_out=output.genotypes,
+                        phe_out=output.phenotypes,
+                        generation=params.generation,
+                        old_id_pheno=True,
+                        phenotype=input.phenotypes,
+                        jitter=float(params.jitter))

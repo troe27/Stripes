@@ -1,0 +1,302 @@
+import os
+import random
+
+wild = list()
+wild1, = glob_wildcards(os.path.join(config["Raw_Folder"], "{sample}_forward.fastq.gz"))
+# In case we only have the bam for some individuals
+wild2, = glob_wildcards(os.path.join(config["CALL_WD"], "{sample, [^_t]*}.bam"))
+
+# in case variants are already called, with combined vcf:
+if not config["sample_file"] == "False":
+    wild3 = [i.rstrip() for i in open(config["sample_file"], "r").read().split("\n") ]
+wild = list(set(wild1 + wild2 + wild3))
+wild = [item for item in wild if not item==""]
+#print(wild)
+chroms = [e for e in range(1, int(config["scaffoldNumber"])+1)]
+#print("There are ", len(wild), " individuals to be treated")
+
+
+rule all_complete:
+    input:
+        expand(os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{f}.genotype", "{f}.genotype.{chr}.corrected.refined.breaks.txt"),
+               f=wild, chr=chroms, study = config["indiv"].values()),
+        expand(os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{f}.genotype", "{f}.genotype.{chr}.rough_COs.recomb.txt"),
+               f=wild, chr=chroms, study = config["indiv"].values())
+
+rule make_contig_names_file:
+    input:
+        config["reference"]
+    output:
+        config["contigNames"],
+        config["genomeSizeFile"]
+    conda:
+        config["conda"]
+    script:
+        "scripts/make_contig_names.py"
+
+
+rule make_annotations:
+    input:
+        founders = config["founders"],
+        pedigree = config["pedigree"],
+        high = config["high"],
+        low = config["low"]
+    threads: 1
+    params:
+        gen = config["generation"],
+        python = config["python"]
+    output:
+        fixed = os.path.join(config["TIGER_WD"], "founders_annotated.tsv"),
+        id_to_set = os.path.join(config["TIGER_WD"],"id_to_set_F"+str(config["generation"])+".csv")
+    conda:
+        config["conda"]
+    shell:
+        "{params.python} scripts/vcf2individualGenotypes/ff_tgr.py -i {input.founders} -o {output.fixed} -p {input.pedigree} -t {threads} --high {input.high} --low {input.low} -g {params.gen}"
+
+
+rule vcf2individualgenotypes:
+    input:
+         fixed_tab = rules.make_annotations.output.fixed,
+         set_to_id = rules.make_annotations.output.id_to_set,
+         vcf = config["cohort"]
+    output:
+        os.path.join(config["TIGER_WD"],"{study}" + config["GENOTYPE_SUFFIX"], "{f}.genotype")
+    params:
+        sample_ID = "{f}",
+        python = config["python"]
+    threads: 1
+    group: "per_chrom"
+    conda:
+        config["conda"]
+    shell:
+        "{params.python} scripts/vcf2individualGenotypes/make_TGR_input.py --infile {input.vcf}"+
+                                " --outfile {output}"+
+                                " --threads {threads}"+
+                                " --annot {input.fixed_tab}"+
+                                " --set_to_id {input.set_to_id}"+
+                                " --sample_id {params.sample_ID}"
+
+
+# tabix
+rule tabix:
+    input:
+        "{sample}"
+    output:
+        "{sample}.tbi"
+    group: "per_chrom"
+    conda:
+        config["conda"]
+    shell:
+        "tabix -p vcf {input}"
+
+#rule select:
+#    input:
+#        vcf = os.path.join(config["TIGER_WD"], config["indiv"]["fam"] + config["CALLING_SUFFIX"], "resequenced.merged.rehead.vcf.bgz"),
+#        selected = config["selectBetweenLines"],
+#        vcfIndex = os.path.join(config["TIGER_WD"], config["indiv"]["fam"] + config["CALLING_SUFFIX"], "resequenced.merged.rehead.vcf.bgz") + ".tbi"
+#    output:
+#        os.path.join(config["TIGER_WD"], config["indiv"]["lines"] + config["CALLING_SUFFIX"], "resequenced.merged.rehead.vcf.bgz")
+#    threads:
+#        1
+#    shell:
+#        "bcftools view {input.vcf} --threads {threads} -R {input.selected} -O z -o {output}"
+
+rule sort:
+    input:
+        os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}")
+    output:
+        os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR", "{file}.sorted")
+    group: "per_chrom"
+    priority:
+        30
+    shell:
+        "sort -k 1,1n -k 2,2n {input} > {output}"
+
+rule short:
+    input:
+        gtfile = rules.sort.output,
+        index = config["contigNames"]
+    output:
+        expand(os.path.join(config["TIGER_WD"], "{{study}}" + config["GENOTYPE_SUFFIX"], "{{file}}_DIR","{{file}}.chr.{chr_num}"), chr_num=chroms)
+    params:
+        outpath = os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR"),
+        maxchr = config["scaffoldNumber"],
+        f = "{file}",
+        python = config["python"]
+    conda:
+        config["conda"]
+    group: "per_chrom"
+    shell:
+        "{params.python} scripts/vcf2individualGenotypes/split_by_chrom.py  -i {input.gtfile}  -o {params.outpath}  -s {input.index}  -m {params.maxchr} -d {params.f} "
+
+
+####### TIGER PIPELINE #######
+
+
+rule caller:
+    input:
+        os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR","{file}.chr.{chr}")
+    output:
+        os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.allele_co.txt")
+    group: "per_chrom"
+    priority:
+        30
+    params:
+        commandName = os.path.join(config["individualGenotypes2breaksPath"], "base_caller.jar"),
+        javaopts = config["java_options"]
+    conda:
+        config["conda"]
+    shell:
+        "java {params.javaopts} -jar  {params.commandName}  -r {input} -o {output} -n bi"  # || touch {output}
+
+
+# get win averages and beta mixtures
+rule estimate:
+    input:
+        os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR","{file}.chr.{chr}")
+    output:
+        estimate = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.frequencies_for_hmm.txt"),
+        beta = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}bmm.intersections.txt")
+    group: "per_chrom"
+    params:
+        winsize = config["winsize"],
+        commandNameEstimator = os.path.join(config["individualGenotypes2breaksPath"], "allele_freq_estimator.jar"),
+        commandNameBeta = os.path.join(config["individualGenotypes2breaksPath"], "beta_mixture_model.R"),
+        javaopts = config["java_options"]
+    conda:
+        config["conda"]
+    priority:
+        4
+    shell:
+        "java {params.javaopts} -jar {params.commandNameEstimator}  -r {input} -o {output.estimate} -n bi -w {params.winsize} &&"
+        "Rscript --vanilla {params.commandNameBeta}  {output.estimate}  {output.beta}"    # || touch {output.beta} {output.estimate}
+
+
+# get beta mixture
+#rule beta:
+#    input:
+#        rules.estimate.output
+#    output:
+    #     os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}bmm.intersections.txt")
+    # params:
+    #     commandName = os.path.join(config["individualGenotypes2breaksPath"], "beta_mixture_model.R")
+    # priority:
+    #     5
+   # group:·"per_chrom"$
+    # shell:
+    #     "Rscript --vanilla {params.commandName}  {input}  {output}"
+
+
+# get HMM probablities
+rule prep_prob:
+    input:
+        vcf = os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR","{file}.chr.{chr}"),
+        genomeSize = config["genomeSizeFile"],
+        base = rules.caller.output
+    output:
+        os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}file_for_probabilities.txt")
+    group: "per_chrom"
+
+    params:
+        ident = "{file}.{chr}".split(".")[0],
+        commandName = os.path.join(config["individualGenotypes2breaksPath"], "prep_prob.pl")
+    conda:
+        config["conda"]
+    priority:
+        60
+    shell:
+        "perl {params.commandName} -s {params.ident} -m {input.vcf} -b {input.base} -c {input.genomeSize} -o {output}"   # || touch {output}
+
+# Calculate transmission and emission probabilities for the HMM
+rule hmm_prob:
+    input:
+        freq = rules.estimate.output.estimate,
+        hmm_prob = rules.prep_prob.output,
+        genomeSize = config["genomeSizeFile"],
+        beta = rules.estimate.output.beta
+    output:
+        model = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}hmm_model"),
+        sliding = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}_sliding_window.breaks.txt")
+    params:
+        commandName = os.path.join(config["individualGenotypes2breaksPath"], "hmm_prob.pl")
+    group: "per_chrom"
+    conda:
+        config["conda"]
+    priority:
+        70
+    shell:
+        "tmp={output.sliding}; \
+        tmp1=${{tmp%_*}}; \
+        outShort=${{tmp1%_*}}; \
+        perl {params.commandName}  -s {input.freq} -p {input.hmm_prob} -o $outShort -a {input.beta} -c {input.genomeSize}"    # || touch {output.model} {output.sliding}
+
+
+## apply HMM
+rule hmm:
+    input:
+        call = rules.caller.output,
+        model = rules.hmm_prob.output.model
+    output:
+        hmm = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.hmm.out.txt")
+    group: "per_chrom"
+    conda:
+        config["conda"]
+    params:
+        commandName = os.path.join(config["individualGenotypes2breaksPath"], "hmm_play.jar")
+    priority:
+        80
+    shell:
+        "java -jar {params.commandName} -r {input.call} -o {output.hmm} -t bi -z {input.model}"    # || touch {output.hmm}
+
+## get co
+rule prep_co:
+    input:
+        vcf = os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR","{file}.chr.{chr}"),
+        genomeSize = config["genomeSizeFile"],
+        hmm = rules.hmm.output
+    output:
+        total = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs.txt"),
+        partial = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs.breaks.txt"),
+        smoothed = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.corrected.refined.breaks.txt")
+    group: "per_chrom"
+    conda:
+         config["conda"]
+    params:
+        ident = "{file}.{chr}".split(".")[0],
+        commandName = os.path.join(config["individualGenotypes2breaksPath"], "prepare_break.pl"),
+        commandNameSmooth = os.path.join(config["individualGenotypes2breaksPath"], "breaks_smoother.pl")
+    priority:
+        90
+    shell:
+        "perl {params.commandName} -s {params.ident} -m {input.vcf} -b {input.hmm} -c  {input.genomeSize} -o {output.total} &&"
+        "perl {params.commandNameSmooth} -b {output.partial} -o {output.smoothed}"    # || touch {output.total} {output.partial} {output.smoothed}
+
+## refine co
+rule refine:
+    input:
+        vcf = os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR","{file}.chr.{chr}"),
+        breaks = rules.prep_co.output.partial
+    output:
+        os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs.refined.recomb.txt"),
+        os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs.refined.breaks.txt"),
+        os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs.recomb.txt")
+    group: "per_chrom"
+    conda:
+         config["conda"]
+    params:
+        commandName = os.path.join(config["individualGenotypes2breaksPath"], "refine_recombination_break.pl")
+    priority:
+        100
+    shell:
+        "perl {params.commandName} {input.vcf} {input.breaks}"    # || touch {output}
+
+## smooth co
+#rule smoother:
+#    input:
+#        breaks = rules.prep_co.output.partial
+#    output:
+#        protected(os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.corrected.refined.breaks.txt"))
+#    params:
+#        commandName = os.path.join(config["individualGenotypes2breaksPath"], "breaks_smoother.pl")
+#    shell:
+#        "perl {params.commandName} -b {input.breaks} -o {output}"
