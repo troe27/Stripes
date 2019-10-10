@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Submit this clustering script for sbatch to snakemake with:
 

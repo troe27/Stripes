@@ -1,33 +1,39 @@
 # The reference genome, used for the mapping
 reference:
-  /Users/tilro532/rackstore/ref_gg6a/ref_unzipped/GCF_000002315.5_GRCg6a_genomic.fna
+  /proj/snic2019-8-287/test_data/reference/ref_unzipped/GCF_000002315.5_GRCg6a_genomic.fna
 
 # If we want to have an output that contains only the sites selected between 2 lines #TODO needed? FIXME
 selectBetweenLines:
-  /Users/tilro532/wd/stripes_2_data/Founder_fixed_sites_chr_sites.txt
+  /home/tilman/storage2/stripes_2_data/Founder_fixed_sites_chr_sites.txt
 
 # Folder containing the fastq (considered as paired and named {sample}_forward.fastq.gz and {sample}_reverse.fastq.gz)
 Raw_Folder:
-  /Users/tilro532/wd/stripes_2_data/raw
+  /proj/snic2019-8-287/test_data/raw
 
 # file containing all sample wildcards, in case no individual input files are there anymore
 # TODO have this derived from the VCF samples ?
 sample_file:
-  /Users/tilro532/wd/stripes_2_data/input_aux/sample_names_F2_new.txt
+  ../../test_data/aux/samples.txt
+  
 
+conda:
+  ./config/env.yaml
+
+python:
+  /crex/proj/snic2019-8-287/Stripes/stripes/.snakemake/conda/c2815089/bin/python
 
 # The VCF file of founders (created separatly with a more classic approach, in our case GATK and a joined call)
 founders:
-  /Users/tilro532/rackstore/all_GQ20_MQ50_noIndels_callrate0.3.vcf
+  /proj/snic2019-8-287/test_data/aux/allGQ20_MQ50_noIndels_callrate0.3_test_founders.vcf
 
 TIGER_WD:
-  /Users/tilro532/wd/stripes_2_data/data
+  /proj/snic2019-8-287/test_data/tiger
 
 CALL_WD:
   VCF
 
 cohort:
-  /Users/tilro532/rackstore/F2/all_f2_only_founder_snps_new_names.vcf
+  /proj/snic2019-8-287/test_data/test_two_samples.vcf
 
 # Was used to test the difference of quality in pipeline using markers fixed in family and in line
 indiv:
@@ -51,8 +57,11 @@ TIGER_SUFFIX:
 
 # A file with the chromosomes and their size in base (see example)
 genomeSizeFile:
-  /Users/tilro532/wd/stripes_2_data/size.genome
+  /proj/snic2019-8-287/test_data/size.genome
 
+# java options for rule caller and rule estimate:                                                                                                                    
+java_options:
+  -Xmx4G
 
 # Number of SNP per windows
 winsize:
@@ -60,24 +69,24 @@ winsize:
 
 # Number of scaffolds to treat (Take the scaffold numbered (1-scaffoldNumber), the methods is not working well for smaller scaffold
 scaffoldNumber:
-  25
+  3
 
 # The pedigree file (see example for format)
 pedigree:
-  /Users/tilro532/wd/stripes_2_data/input_aux/combined_pedigree_20181217.tsv
+  /proj/snic2019-8-287/test_data/aux/AIL_pedigree_20190826.tsv
 
 # File containing the full names (from the reference, a rank (col 3) and the size of the chromosomes
 contigNames:
-  /Users/tilro532/wd/stripes_2_data/input_aux/Index_fastq_contig_chr.txt
+ /proj/snic2019-8-287/test_data/aux/Index_fastq_contig_chr.txt
 
 
 # If not in the script folder use an absolute path
 individualGenotypes2breaksPath:
-  individualGenotypes2breaks
+  scripts/individualGenotypes2breaks
 
 high:
-  /Users/tilro532/wd/stripes_2_data/input_aux/high_full.txt
+  /proj/snic2019-8-287/test_data/aux/high_full.txt
 low:
-  /Users/tilro532/wd/stripes_2_data/input_aux/low_full.txt
+  /proj/snic2019-8-287/test_data/aux/low_full.txt
 generation:
   2

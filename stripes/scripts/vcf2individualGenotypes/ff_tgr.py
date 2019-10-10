@@ -71,6 +71,8 @@ def load_pedigree_15(pedigree_file):
             sex = "female"
         elif str(row["Sex"]) == "2":
             sex = "male"
+        else:
+            sex="NA"
         pedigree[row["ID"]] = {"gen":int(str(row["ID"][-2:])),
                            "sire":str(row["Sire"]),
                            "dam":str(row["Dam"]),
@@ -153,8 +155,10 @@ def find_fixed_sites(vcf_file, sets, outfile, threads=1, full=True, tsv=False):
     ##### high - low specific, generate popcomb.
     ##### swap out if generalising again
     for setid, setitem in sets.items():
+        print(setid, setitem)
         pop1 = dict.fromkeys(setitem["high"])
         p1_indices = [i for i,sample in enumerate([i.split("_")[0].rsplit("-",1)[1]+"00" for i in vcf.samples]) if sample in pop1] #sample naming specific
+        print(p1_indices)
         pop2 = dict.fromkeys(setitem["low"])
         p2_indices = [i for i,sample in enumerate([i.split("_")[0].rsplit("-",1)[1]+"00" for i in vcf.samples]) if sample in pop2] #sample naming specific
         popcomb[setid]=[p1_indices, p2_indices]
