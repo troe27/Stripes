@@ -11,10 +11,12 @@ if not config["sample_file"] == "False":
     wild3 = [i.rstrip() for i in open(config["sample_file"], "r").read().split("\n") ]
 wild = list(set(wild1 + wild2 + wild3))
 wild = [item for item in wild if not item==""]
+
 #print(wild)
 chroms = [e for e in range(1, int(config["scaffoldNumber"])+1)]
 
-winsize = config["win_sizes"].split(";")
+winsize = config["winsize"].split(";")
+print(winsize)
 #print("There are ", len(wild), " individuals to be treated")
 
 
@@ -22,7 +24,7 @@ rule all_complete:
     input:
         expand(os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{f}.genotype", "{f}.genotype.{chr}.corrected.refined.breaks_windowsize{winsize}.txt"),
                f=wild, chr=chroms, study = config["indiv"].values(), winsize=winsize),
-        expand(os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{f}.genotype", "{f}.genotype.{chr}.rough_COs.recomb_windowsize{winsize}.txt"),
+        expand(os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{f}.genotype", "{f}.genotype.{chr}.rough_COs_windowsize{winsize}.recomb.txt"),
                f=wild, chr=chroms, study = config["indiv"].values(), winsize=winsize)
 
 rule make_contig_names_file:
@@ -217,8 +219,8 @@ rule hmm_prob:
         genomeSize = config["genomeSizeFile"],
         beta = rules.estimate.output.beta
     output:
-        model = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}hmm_model_windowsize{winsize}"),
-        sliding = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}_sliding_window.breaks_windowsize{winsize}.txt")
+        model = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.winsize{winsize}hmm_model"),
+        sliding = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.winsize{winsize}_sliding_window.breaks.txt")
     params:
         commandName = os.path.join(config["individualGenotypes2breaksPath"], "hmm_prob.pl")
     group: "per_chrom"
@@ -229,7 +231,7 @@ rule hmm_prob:
     shell:
         "tmp={output.sliding}; \
         tmp1=${{tmp%_*}}; \
-        outShort=${{tmp1%_*}}; \
+        outShort=${{tmp1%_*}};echo $outShort; \
         perl {params.commandName}  -s {input.freq} -p {input.hmm_prob} -o $outShort -a {input.beta} -c {input.genomeSize}"    # || touch {output.model} {output.sliding}
 
 
@@ -239,7 +241,7 @@ rule hmm:
         call = rules.caller.output,
         model = rules.hmm_prob.output.model
     output:
-        hmm = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.hmm.out_windowsize{windowsize}.txt")
+        hmm = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.hmm.out_windowsize{winsize}.txt")
     group: "per_chrom"
     conda:
         config["conda"]
@@ -255,11 +257,12 @@ rule prep_co:
     input:
         vcf = os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR","{file}.chr.{chr}"),
         genomeSize = config["genomeSizeFile"],
-        hmm = rules.hmm.output
+        #hmm = rules.hmm.output
+        hmm = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.hmm.out_windowsize{winsize}.txt")
     output:
-        total = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs_windowsize{winsize}.txt"),
-        partial = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs_windowsize{winsize}.breaks.txt"),
-        smoothed = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.corrected.refined.breaks_windowsize{winsize}.txt")
+        total = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs_windowsize{winsize,[0-9]+}.txt"),
+        partial = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs_windowsize{winsize,[0-9]+}.breaks.txt"),
+        smoothed = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.corrected.refined.breaks_windowsize{winsize,[0-9]+}.txt")
     group: "per_chrom"
     conda:
          config["conda"]
@@ -277,11 +280,11 @@ rule prep_co:
 rule refine:
     input:
         vcf = os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR","{file}.chr.{chr}"),
-        breaks = rules.prep_co.output.partial
+        breaks = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs_windowsize{winsize}.breaks.txt") #rules.prep_co.output.partial
     output:
-        os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs.refined.recomb_windowsize{winsize}.txt"),
-        os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs.refined.breaks_windowsize{winsize}.txt"),
-        os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs.recomb_windowsize{winsize}.txt")
+        os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs_windowsize{winsize}.refined.recomb.txt"),
+        os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs_windowsize{winsize}.refined.breaks.txt"),
+        os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file}.{chr}.rough_COs_windowsize{winsize}.recomb.txt")
     group: "per_chrom"
     conda:
          config["conda"]
