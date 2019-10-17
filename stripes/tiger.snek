@@ -79,6 +79,7 @@ rule vcf2individualgenotypes:
                                 " --sample_id {params.sample_ID}"
 
 
+
 # tabix
 rule tabix:
     input:
@@ -131,6 +132,28 @@ rule short:
     shell:
         "{params.python} scripts/vcf2individualGenotypes/split_by_chrom.py  -i {input.gtfile}  -o {params.outpath}  -s {input.index}  -m {params.maxchr} -d {params.f} "
 
+rule flip_chromosome:
+    input:
+        size_file =  ##TODO
+        genotype = os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR","{file}.chr.{chr}")
+    output:
+        genotype = os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR","{file}.flipped.chr.{chr}")
+    run:
+        import pandas as pd
+        # get size in bp for chromosome
+        a = [j.split("\t") for j in open(input.size_file).read().split("\n") if len(j.split("\t"))==3]
+        header = a.pop(0)
+        chr_size_dict = {int(i[2]):int(i[1]) for i in a}
+
+        df = pd.read_csv(input.genotype, sep="\t", header=None)
+        df.columns = ["chromosome", "position", "HIGH","OFHIGH", "LOW", "OFLOW"]
+
+        new_positions = []
+        for i, k in df.iterrows():
+            new_positions.append(chr_size_dict[k["chromosome"]]-k["position"])
+        df.position = new_positions
+        df = df.sort_values(by="position", ascending=True)
+        df.to_csv(output.genotype, index=False, header=False, sep="\t")
 
 ####### TIGER PIPELINE #######
 
