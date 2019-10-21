@@ -16,7 +16,6 @@ wild = [item for item in wild if not item==""]
 chroms = [e for e in range(1, int(config["scaffoldNumber"])+1)]
 
 winsize = config["winsize"].split(";")
-print(winsize)
 #print("There are ", len(wild), " individuals to be treated")
 
 
@@ -231,7 +230,7 @@ rule hmm_prob:
     shell:
         "tmp={output.sliding}; \
         tmp1=${{tmp%_*}}; \
-        outShort=${{tmp1%_*}};echo $outShort; \
+        outShort=${{tmp1%_*}}; \
         perl {params.commandName}  -s {input.freq} -p {input.hmm_prob} -o $outShort -a {input.beta} -c {input.genomeSize}"    # || touch {output.model} {output.sliding}
 
 

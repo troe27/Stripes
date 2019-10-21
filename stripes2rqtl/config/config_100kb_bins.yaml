@@ -14,6 +14,13 @@ chr_ranks_file:
 outfolder:
   "/home/tilman/nas/stripes_AIL_gg6a/stripes2rqtl_bin250kb"
 
+
+
+tiger_string:
+  "with.fam.f2.call2.TIGER_OUT/"
+
+genotype_string:
+  "with.fam.f2.call2.Genotype/"
 ## parameter for format_in_r
 cutoff:
   10 # minimum number of markers

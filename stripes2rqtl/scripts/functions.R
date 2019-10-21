@@ -22,14 +22,14 @@ Extract_all <- function(chromosome,id_all, all_vcf,gap,filter=T){
 
 
 #####################Extract_by_chr##############################
-Extract_by_chr <- function(id_all, all_vcf,chr,filter=T,gap=NULL){
+Extract_by_chr <- function(id_all, all_vcf,chr,windowsize,filter=T,gap=NULL){
   if(!require(data.table)){
     require(data.table)
   }
   start <- c()
   end <- c()
   for ( i in 1:length(id_all)){
-    path_co <- paste0(all_vcf[i],"/",id_all[i],".genotype.",chr,".rough_COs.refined.breaks.txt")
+    path_co <- paste0(all_vcf[i],"/",id_all[i],".genotype.",chr,".rough_COs_windowsize",windowsize,".refined.breaks.txt")
     if(file.exists(path_co)){
       co <- data.frame(fread(path_co))
       if(filter){
@@ -56,7 +56,7 @@ Extract_by_chr <- function(id_all, all_vcf,chr,filter=T,gap=NULL){
 
   for( i in 3:(length(id_all)+2)){
     # read in co file
-    path_co <- paste0(all_vcf[i-2],"/",id_all[i-2],".genotype.",chr,".rough_COs.refined.breaks.txt")
+    path_co <- paste0(all_vcf[i-2],"/",id_all[i-2],".genotype.",chr,".rough_COs_windowsize",windowsize,".refined.breaks.txt")
     if(file.exists(path_co)){
       co <- data.frame(fread(path_co))
       if(filter)

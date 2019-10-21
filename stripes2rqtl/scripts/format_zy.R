@@ -15,13 +15,13 @@ if (length(args)==0) {
 input_folder <- args[1]
 tiger_folder <- args[2]
 chr_ranks_file <- args[3]
-
 ## parameters:
- binsize <- as.numeric(args[4]) #size of bin in bp
- cutoff <- as.numeric(args[5]) # min number of markers per bin
+windowsize <- args[4] # size of hmm sliding window
+binsize <- as.numeric(args[5]) #size of bin in bp
+cutoff <- as.numeric(args[6]) # min number of markers per bin
 
 # output:
-outfile <- args[6]
+outfile <- args[7]
 
 all_genotypes <- setdiff(list.files(path = input_folder),list.dirs(path = input_folder,full.names = F)) #  extract the name of output
 all_id <- gsub(pattern = "(\\d+)\\.genotype$",replacement = "\\1",x = all_genotypes) # extract the ID
@@ -61,9 +61,9 @@ all_vcf <- list.dirs(path = tiger_folder)
 reg_expr <- paste0(tiger_folder,"/", "(\\d+)\\..*") ##gotcha
 id_all <- gsub(pattern = reg_expr,replacement = "\\1",x = all_vcf) #
 index.keep <- which(id_all %in% id.keep)
-all <- list.files(all_vcf,pattern = "\\d+\\.genotype\\.(\\d+)\\.rough_COs\\.refined\\.breaks.txt")
-chr <- sort(as.numeric(unique(gsub(pattern = "\\d+\\.genotype\\.(\\d+)\\.rough_COs\\.refined\\.breaks.txt",replacement = "\\1",x = all))))
-out_3 <- Extract_all(chromosome = chr,id_all = id_all[index.keep],all_vcf = all_vcf[index.keep],gap=3e6,filter = T )
+all <- list.files(all_vcf,pattern = "\\d+\\.genotype\\.(\\d+)\\.rough_COs_windowsize\\d+\\.refined\\.breaks.txt")
+chr <- sort(as.numeric(unique(gsub(pattern = "\\d+\\.genotype\\.(\\d+)\\.rough_COs_windowsize\\d+\\.refined\\.breaks.txt",replacement = "\\1",x = all))))
+out_3 <- Extract_all(chromosome = chr,id_all = id_all[index.keep], windowsize = windowsize ,all_vcf = all_vcf[index.keep],gap=3e6,filter = T )
 #print(colnames(out_3))
 chr.match <- chr_ranks_table
 length.chr <- ceiling(chr.match$size/binsize)

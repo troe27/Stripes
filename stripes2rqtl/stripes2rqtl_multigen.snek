@@ -9,22 +9,40 @@ configfile: "config/config_v2.yaml"
 
 #wild = glob_wildcards(os.path.join(config["input_folder"],"F{sample}","stripes_data","founders_annotated.tsv"))
 samples = [i.strip("F") for i in os.listdir(config["input_folder"]) if i.startswith("F")]
+windowsizes = config["windowsizes"].split(";")
 #print(samples)
 #print(wild.sample)
 
 rule all:
     input:
-        expand(os.path.join(config["outfolder"],"F{sample}", "F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+".csv"), sample=samples)
-        #genotypes =os.path.join(config["outfolder"], "rqtl_genotypes_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb02.csv") ,
-        #phenotypes =os.path.join(config["outfolder"],"rqtl_phenotypes_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb02.csv")
+        expand(os.path.join(config["outfolder"],
+                            "F{sample}",
+                            "F{sample}_gt_matrix_FilteredForBinsize"+
+                            str(config["binsize"])+
+                            "_windowsize{windowsize}"+
+                            ".csv"),
+               sample=samples,
+               windowsize=windowsizes
+              )
 
 rule remove_empty_genotypes:
+"""removes files (samples x chromosomes) with no informative markers."""
     input:
-        genotypes = os.path.join(config["input_folder"],"F{sample}","stripes_data/with.fam.f2.call2.Genotype/"),
+        genotypes = os.path.join(config["input_folder"],
+                                 "F{sample}",
+                                 "stripes_data",
+                                 config["genotype_string"]
+                                ),
     output:
-        log = os.path.join(config["outfolder"], "F{sample}","F{sample}_empty_genotypes.txt")
+        log = os.path.join(config["outfolder"],
+                           "F{sample}",
+                           "F{sample}_empty_genotypes.txt"
+                          )
     params:
-        rm_folder = os.path.join(config["outfolder"], "F{sample}","F{sample}_empty_files/")
+        rm_folder = os.path.join(config["outfolder"],
+                                 "F{sample}",
+                                 "F{sample}_empty_files/"
+                                )
     run:
         import os
         import subprocess
@@ -40,27 +58,118 @@ rule remove_empty_genotypes:
                     log_handle.write(full_path+"\n")
 
 
+
+rule split_output_by_winsize:
+    """ Move all window-size related files into their own folders"""
+    input:
+        tiger_folder = os.path.join(config["input_folder"],
+                                    "F{sample}",
+                                    "stripes_data",
+                                    config["tiger_string"])
+    output:
+        tiger_folder_per_binsize = os.path.join(config["input_folder"],
+                                                "F{sample}","stripes_data",
+                                                "windowsize{windowsize, [0-9]+}",
+                                                config["tiger_string"])
+    params:
+        windowsize = "{windowsize, [0-9]+}",
+        in_folder = os.path.join(config["input_folder"],
+                                 "F{sample}",
+                                 "stripes_data"),
+        tiger_string = config["tiger_string"]
+    run:
+        import os
+        import subprocess
+        list_of_gt_folders = os.listdir(input.tiger_folder)
+        subprocess.call(["mkdir",
+                         os.path.join(params.in_folder,
+                                      str(params.windowsize)
+                                     )
+                        ]
+                       )
+        subprocess.call(["mkdir",
+                         os.path.join(params.in_folder,
+                                      str(params.windowsize),
+                                      params.tiger_string)
+                        ]
+                       )
+        for i in list_of_gt_folders:
+            subprocess.call(["mkdir",
+                             os.path.join(params.infolder,
+                                          str(params.windowsize),
+                                          params.tiger_string,i
+                                         )
+                             ]
+                            )
+             for j in os.listdir(os.path.join(input_tiger,i)):
+                 if "windowsize"+str(windowsize) in j:
+                    subprocess.call(["mv",
+                                     os.path.join(params.input_tiger,i,j),
+                                     os.path.join(params.input_folder,
+                                                  str(params.windowsize),
+                                                  params.tiger_string,i+"/"
+                                                 )
+                                    ]
+                                   )
+
+
 rule format_in_r:
     """ Make genotype matrix and filter for all bins that have fewer than 10 markers.
         This script contains quite a few sample specific regular expressions & will likely break at some point.
         Here's to hoping that i will replace it with something generic before it does."""
     input:
-        genotypes = os.path.join(config["input_folder"],"F{sample}","stripes_data/with.fam.f2.call2.Genotype/"),
-        chr_ranks = os.path.join(config["input_folder"], "F{sample}", "stripes_data/input_aux/Index_fastq_contig_chr.txt"),
-        tiger_out = os.path.join(config["input_folder"],"F{sample}","stripes_data/with.fam.f2.call2.TIGER_OUT/"),
-        rm_log = os.path.join(config["outfolder"], "F{sample}","F{sample}_empty_genotypes.txt")
+        genotypes = os.path.join(config["input_folder"],
+                                 "F{sample}",
+                                 "stripes_data",
+                                 config["genotype_string"]
+                                ),
+        chr_ranks = os.path.join(config["input_folder"],
+                                 "F{sample}",
+                                 "stripes_data/input_aux/Index_fastq_contig_chr.txt"
+                                 ),
+        tiger_out = os.path.join(config["input_folder"],
+                                 "F{sample}",
+                                 "stripes_data",
+                                 config["tiger_string"]
+                                ),
+        rm_log = os.path.join(config["outfolder"],
+                              "F{sample}",
+                              "F{sample}_empty_genotypes.txt"
+                             )
     output:
-        os.path.join(config["outfolder"],"F{sample}", "F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+".csv")
+        os.path.join(config["outfolder"],
+                     "F{sample}",
+                     "F{sample}_gt_matrix_FilteredForBinsize"+
+                     str(config["binsize"])+
+                     "_windowsize{windowsize}"+
+                     ".csv"
+                    )
     params:
         binsize = config["binsize"],
-        cutoff = config["cutoff"]
+        cutoff = config["cutoff"],
+        windowsize = "{windowsize}"
     shell:
-        "Rscript --vanilla scripts/format_zy.R  {input.genotypes} {input.tiger_out} {input.chr_ranks} {params.binsize} {params.cutoff} {output}"
+        "Rscript --vanilla scripts/format_zy.R \
+         {input.genotypes} \
+         {input.tiger_out} \
+         {input.chr_ranks} \
+         {params.windowsize} \
+         {params.binsize} \
+         {params.cutoff} \
+         {output}"
+
 
 rule combine_datasets:
     """ """
     input:
-        genotype = expand(os.path.join(config["outfolder"],"F{sample}", "F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+".csv"), sample=samples),
+        genotype = expand(os.path.join(config["outfolder"],
+                                       "F{sample}",
+                                       "F{sample}_gt_matrix_FilteredForBinsize"+
+                                       str(config["binsize"])+
+                                       ".csv"
+                                      ),
+                          sample=samples
+                         ),
         pedigree = config["pedigree_file"]
     output:
         os.path.join(config["outfolder"],
@@ -71,7 +180,11 @@ rule combine_datasets:
                      "FilledGaps"+
                      str(config["fill_gap_threshold"])+
                      "FilteredForCongruency"+
-                     str(config["congruency_offspring_thresh"])+"_"+str(config["congruency_qual_thresh"])+".csv")
+                     str(config["congruency_offspring_thresh"])+
+                     "_"+
+                     str(config["congruency_qual_thresh"])+
+                     ".csv"
+                    )
     params:
         gap_threshold = config["fill_gap_threshold"],
         xo_threshold =  config["xo_minsize"]
@@ -89,14 +202,17 @@ rule combine_datasets:
         gt.filter_by_parentage()
         filled_gaps_gt = gt.fill_gaps(thresh = params.gap_threshold)
         gt.gt_matrix = filled_gaps_gt.fillna("NA") # set the now filled genotype as the new genotype matrix.
-        # filter out all small double recombinations below threshold, for all samples that are in the selected generations.
-        gt.xo_filter(thresh=params.xo_threshold, strict=False, generations=[]) # if gen == empty, all samples are filtered. ## TODO need to be able to set this from configfile
+        # filter out all small double recombinations below threshold,
+        ## for all samples that are in the selected generations.
+        # if gen == empty, all samples are filtered. ## TODO need to be able to set this from configfile
+        gt.xo_filter(thresh=params.xo_threshold, strict=False, generations=[])
         a = gt.apply_filters() # apply filters
         gt.gt_matrix = a #set filtered genotype_matrix as new gt_matrix
         filled_gaps_gt = gt.fill_gaps(thresh = params.gap_threshold) #fill in newly created gaps
         filled_gaps_gt.to_csv(output)
 
 rule make_combined_rqtl_input:
+    """  """
     input:
         phenotypes = config["phenotype_file"],
         genotypes = os.path.join(config["outfolder"],
@@ -128,9 +244,21 @@ rule make_combined_rqtl_input:
 rule filter_gt_xo_size:
     """ set all crossovers below 3 mb in size to missing."""
     input:
-        genotypes = os.path.join(config["outfolder"],"F{sample}","F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+".csv"),
+        genotypes = os.path.join(config["outfolder"],
+                                 "F{sample}",
+                                 "F{sample}_gt_matrix_FilteredForBinsize"+
+                                 str(config["binsize"])+
+                                 ".csv"
+                                ),
     output:
-        outfile = os.path.join(config["outfolder"], "F{sample}","F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+".csv"),
+        outfile = os.path.join(config["outfolder"],
+                               "F{sample}",
+                               "F{sample}_gt_matrix_FilteredForBinsize"+
+                               str(config["binsize"])+
+                               "_FilteredForXO"+
+                               str(config["xo_minsize"])+
+                               ".csv"
+                              ),
     params:
         cutoff = config["xo_minsize"]
     run:
@@ -144,15 +272,36 @@ rule filter_gt_xo_size:
 
 rule make_rqtl_input:
     """
-    remove unclear calls that deviate more than the allowed jitter from expected genotypes.
+    remove unclear calls that deviate more than the jitter from expected genotypes.
     format output for R/qtl.
     """
     input:
-        genotypes = os.path.join(config["outfolder"],"F{sample}","F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+".csv"),
+        genotypes = os.path.join(config["outfolder"],
+                                 "F{sample}",
+                                 "F{sample}_gt_matrix_FilteredForBinsize"+
+                                 str(config["binsize"])+
+                                 "_FilteredForXO"+
+                                 str(config["xo_minsize"])+
+                                 ".csv"
+                                ),
         phenotypes = config["phenotype_file"]
     output:
-        genotypes =os.path.join(config["outfolder"],"F{sample}","F{sample}_rqtl_genotypes_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb02.csv") ,
-        phenotypes =os.path.join(config["outfolder"],"F{sample}","F{sample}_rqtl_phenotypes_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb02.csv") ,
+        genotypes =os.path.join(config["outfolder"],
+                                "F{sample}",
+                                "F{sample}_rqtl_genotypes_FilteredForBinsize"+
+                                str(config["binsize"])+
+                                "_FilteredForXO"+
+                                str(config["xo_minsize"])+
+                                "removedAmb02.csv"
+                               ),
+        phenotypes =os.path.join(config["outfolder"],
+                                 "F{sample}",
+                                 "F{sample}_rqtl_phenotypes_FilteredForBinsize"+
+                                 str(config["binsize"])+
+                                 "_FilteredForXO"+
+                                 str(config["xo_minsize"])+
+                                 "removedAmb02.csv"
+                                ),
     params:
         generation = "{sample}",
         jitter = config["jitter"]
