@@ -2,15 +2,15 @@
 
 
 #####################Extract_all#################################
-Extract_all <- function(chromosome,id_all, all_vcf,gap,filter=T){
+Extract_all <- function(chromosome,windowsize, id_all, all_vcf,gap,filter=T){
   counter = 0
   for( i in 1:length(chromosome)){
 
     if(counter==0){
-      out <-  Extract_by_chr(id_all = id_all,all_vcf = all_vcf,chr = chromosome[i],filter=T,gap=gap)
+      out <-  Extract_by_chr(id_all = id_all,all_vcf = all_vcf,windowsize=windowsize, chr = chromosome[i],filter=T,gap=gap)
 
     }else{
-      out <-  cbind.data.frame(out,Extract_by_chr(id_all = id_all,all_vcf = all_vcf,chr = chromosome[i],gap=gap,filter=T))
+      out <-  cbind.data.frame(out,Extract_by_chr(id_all = id_all,all_vcf = all_vcf,windowsize=windowsize, chr = chromosome[i],gap=gap,filter=T))
     }
     counter <- counter +1
     cat(i,"\n")
