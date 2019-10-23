@@ -5,13 +5,15 @@ Date:        20190801
 """
 
 import os
-configfile: "config/config_v2.yaml"
+configfile: "config/config.yaml"
 
 #wild = glob_wildcards(os.path.join(config["input_folder"],"F{sample}","stripes_data","founders_annotated.tsv"))
 samples = [i.strip("F") for i in os.listdir(config["input_folder"]) if i.startswith("F")]
 windowsizes = config["windowsizes"].split(";")
 #print(samples)
 #print(wild.sample)
+
+ruleorder:  split_output_by_winsize > format_in_r
 
 rule all:
     input:
@@ -26,7 +28,7 @@ rule all:
               )
 
 rule remove_empty_genotypes:
-"""removes files (samples x chromosomes) with no informative markers."""
+    """removes files (samples x chromosomes) with no informative markers."""
     input:
         genotypes = os.path.join(config["input_folder"],
                                  "F{sample}",
@@ -67,10 +69,10 @@ rule split_output_by_winsize:
                                     "stripes_data",
                                     config["tiger_string"])
     output:
-        tiger_folder_per_binsize = os.path.join(config["input_folder"],
+        tiger_folder_per_binsize = directory(os.path.join(config["input_folder"],
                                                 "F{sample}","stripes_data",
-                                                "windowsize{windowsize, [0-9]+}",
-                                                config["tiger_string"])
+                                                "{windowsize, [0-9]+}",
+                                                config["tiger_string"]))
     params:
         windowsize = "{windowsize, [0-9]+}",
         in_folder = os.path.join(config["input_folder"],
@@ -95,17 +97,17 @@ rule split_output_by_winsize:
                        )
         for i in list_of_gt_folders:
             subprocess.call(["mkdir",
-                             os.path.join(params.infolder,
+                             os.path.join(params.in_folder,
                                           str(params.windowsize),
                                           params.tiger_string,i
                                          )
                              ]
                             )
-             for j in os.listdir(os.path.join(input_tiger,i)):
-                 if "windowsize"+str(windowsize) in j:
-                    subprocess.call(["mv",
-                                     os.path.join(params.input_tiger,i,j),
-                                     os.path.join(params.input_folder,
+            for j in os.listdir(os.path.join(input.tiger_folder,i)):
+                if "windowsize"+str(params.windowsize) in j:
+                    subprocess.call(["cp",
+                                     os.path.join(input.tiger_folder,i,j),
+                                     os.path.join(params.in_folder,
                                                   str(params.windowsize),
                                                   params.tiger_string,i+"/"
                                                  )
@@ -123,13 +125,15 @@ rule format_in_r:
                                  "stripes_data",
                                  config["genotype_string"]
                                 ),
-        chr_ranks = os.path.join(config["input_folder"],
-                                 "F{sample}",
-                                 "stripes_data/input_aux/Index_fastq_contig_chr.txt"
-                                 ),
+         chr_ranks = config["chr_ranks_file"],
+#        chr_ranks = os.path.join(config["input_folder"],
+#                                 "F{sample}",
+#                                 "stripes_data/input_aux/Index_fastq_contig_chr.txt"
+#                                 ),
         tiger_out = os.path.join(config["input_folder"],
                                  "F{sample}",
                                  "stripes_data",
+                                 "{windowsize}",
                                  config["tiger_string"]
                                 ),
         rm_log = os.path.join(config["outfolder"],
@@ -166,15 +170,18 @@ rule combine_datasets:
                                        "F{sample}",
                                        "F{sample}_gt_matrix_FilteredForBinsize"+
                                        str(config["binsize"])+
+                                       "_windowsize{windowsize}"+
                                        ".csv"
                                       ),
-                          sample=samples
+                          sample=samples,
+                          windowsize=windowsizes
                          ),
         pedigree = config["pedigree_file"]
     output:
         os.path.join(config["outfolder"],
                      "all_samples_gt_matrix_FilteredForBinsize"+
                      str(config["binsize"])+
+                     "_windowsize{windowsize}"+
                      "_FilteredForXO"+
                      str(config["xo_minsize"])+
                      "FilledGaps"+
@@ -218,6 +225,7 @@ rule make_combined_rqtl_input:
         genotypes = os.path.join(config["outfolder"],
                                  "all_samples_gt_matrix_FilteredForBinsize"+
                                  str(config["binsize"])+
+                                 "_windowsize{windowsize}"+
                                  "_FilteredForXO"+
                                  str(config["xo_minsize"])+
                                  "FilledGaps"+
@@ -229,12 +237,14 @@ rule make_combined_rqtl_input:
         genotypes =os.path.join(config["outfolder"],
                                 "all_samples_rqtl_genotypes_FilteredForBinsize"+
                                 str(config["binsize"])+
+                                "_windowsize{windowsize}"+
                                 "_FilteredForXO"+
                                 str(config["xo_minsize"])+
                                 "removedAmb02.csv") ,
         phenotypes =os.path.join(config["outfolder"],
                                  "all_samples_rqtl_phenotypes_FilteredForBinsize"+
                                  str(config["binsize"])+
+                                "_windowsize{windowsize}"+
                                  "_FilteredForXO"+
                                  str(config["xo_minsize"])+
                                  "removedAmb02.csv"),
@@ -248,6 +258,7 @@ rule filter_gt_xo_size:
                                  "F{sample}",
                                  "F{sample}_gt_matrix_FilteredForBinsize"+
                                  str(config["binsize"])+
+                                 "_windowsize{windowsize}"+
                                  ".csv"
                                 ),
     output:
@@ -255,6 +266,7 @@ rule filter_gt_xo_size:
                                "F{sample}",
                                "F{sample}_gt_matrix_FilteredForBinsize"+
                                str(config["binsize"])+
+                               "_windowsize{windowsize}"+
                                "_FilteredForXO"+
                                str(config["xo_minsize"])+
                                ".csv"
@@ -280,6 +292,7 @@ rule make_rqtl_input:
                                  "F{sample}",
                                  "F{sample}_gt_matrix_FilteredForBinsize"+
                                  str(config["binsize"])+
+                                 "_windowsize{windowsize}"+
                                  "_FilteredForXO"+
                                  str(config["xo_minsize"])+
                                  ".csv"
@@ -290,6 +303,7 @@ rule make_rqtl_input:
                                 "F{sample}",
                                 "F{sample}_rqtl_genotypes_FilteredForBinsize"+
                                 str(config["binsize"])+
+                                "_windowsize{windowsize}"+
                                 "_FilteredForXO"+
                                 str(config["xo_minsize"])+
                                 "removedAmb02.csv"
@@ -298,6 +312,7 @@ rule make_rqtl_input:
                                  "F{sample}",
                                  "F{sample}_rqtl_phenotypes_FilteredForBinsize"+
                                  str(config["binsize"])+
+                                 "_windowsize{windowsize}"+
                                  "_FilteredForXO"+
                                  str(config["xo_minsize"])+
                                  "removedAmb02.csv"

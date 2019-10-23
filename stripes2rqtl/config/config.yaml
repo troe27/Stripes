@@ -2,32 +2,48 @@
 
 ## input
 input_folder:
-  "/home/tilman/nas/stripes_AIL_gg6a/F8/stripes_data/with.fam.f2.call2.Genotype/"
-tiger_folder:
-  "/home/tilman/nas/stripes_AIL_gg6a/F8/stripes_data/with.fam.f2.call2.TIGER_OUT"
+  "/home/tilman/nas/stripes_multiwindow_analysis"
+
 pedigree_file:
-  /home/tilman/nas/stripes_AIL_gg6a/F8/stripes_data/input_aux/combined_pedigree_20181217.tsv
+  /home/tilman/nas/pedigree/AIL_pedigree_20190826.tsv
 phenotype_file:
-  /home/tilman/nas/stripes_AIL_gg6a/F8/bw8_nona.csv
+  /home/tilman/nas/AIL_phenotypes20190827.csv
 chr_ranks_file:
-  /home/tilman/nas/stripes_AIL_gg6a/F8/stripes_data/input_aux/Index_fastq_contig_chr.txt
+  /home/tilman/nas/stripes_AIL_gg6a/F15/stripes_data/input_aux/Index_fastq_contig_chr.txt
 ## output:
 outfolder:
-  "/home/tilman/nas/stripes_AIL_gg6a/F8/stripes2rqtl"
+  "/home/tilman/nas/stripes_multiwindow_analysis/stripes2rqtl_bin100kb"
+
+
+
+tiger_string:
+  "with.fam.f2.call2.TIGER_OUT/"
+
+genotype_string:
+  "with.fam.f2.call2.Genotype/"
+
+windowsizes:
+  25;50;75;100;200;300;500
 
 ## parameter for format_in_r
 cutoff:
   10 # minimum number of markers
 binsize:
-  1000000 # size of bins in basepairs, i.e. 1mb
-
+  100000 # size of bins in basepairs, e.g. 100 kb
 
 ## parameter for filter_gt_xo_size
 xo_minsize:
   3
 
 ## parameter for make_rqtl_input:
-generation:
-  08
+fill_gap_threshold:
+  3
+
 jitter:
   0.2
+
+congruency_offspring_thresh:
+  0.8
+
+congruency_qual_thresh:
+  0.6
