@@ -35,7 +35,7 @@ def cli_parser():
         - .VCF file annotated with all sites fixed between unique sets of ancestors.
         - .TSV file with ID, annotating which set of ancestors an individual has.
     ''',formatter_class=RawTextHelpFormatter)
-    
+
     parser_main.add_argument("-i","--infile",
                              help="/path/to/all.vcf",
                              required = True)
@@ -71,6 +71,8 @@ def load_pedigree_15(pedigree_file):
             sex = "female"
         elif str(row["Sex"]) == "2":
             sex = "male"
+        else:
+            sex = "NA"
         pedigree[row["ID"]] = {"gen":int(str(row["ID"][-2:])),
                            "sire":str(row["Sire"]),
                            "dam":str(row["Dam"]),
@@ -94,7 +96,7 @@ def get_fam(pedigree, ID, target="00"):
         if i == int(target):
             break
     return list(set(ancestors))
-    
+
 def get_sets_for_generation(pedigree, generation, target=0):
     """
     Take pedigree dict and generation.
