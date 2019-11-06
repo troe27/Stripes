@@ -139,7 +139,7 @@ rule short:
 
 rule flip_chromosome:
     input:
-        size_file =  config["genomeSizeFile"],
+        size_file =  config["contigNames"],
         genotype = os.path.join(config["TIGER_WD"], "{study}"+str(config["GENOTYPE_SUFFIX"]),"{file}_DIR","{file}.chr.{chr}")
     output:
         genotype = os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR","{file}.flipped.chr.{chr}")
