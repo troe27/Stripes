@@ -13,7 +13,7 @@ Raw_Folder:
 # file containing all sample wildcards, in case no individual input files are there anymore
 # TODO have this derived from the VCF samples ?
 sample_file:
-  ./config/full_samples.txt
+  ./config/two_samples.txt
 
 
 conda:
@@ -27,7 +27,7 @@ founders:
   /home/tilman/nas/all_GQ20_MQ50_noIndels_callrate0.3.vcf
 
 TIGER_WD:
-  /home/tilman/nas/stripes_flip_chromosome
+  /home/tilman/optimise_test
 
 CALL_WD:
   VCF
@@ -69,7 +69,7 @@ winsize:
 
 # Number of scaffolds to treat (Take the scaffold numbered (1-scaffoldNumber), the methods is not working well for smaller scaffold
 scaffoldNumber:
-  30
+  2
 
 # The pedigree file (see example for format)
 pedigree:
