@@ -174,11 +174,11 @@ rule tiger_all:
         hmm_prob_sliding = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_sliding_window.breaks.txt"),
         hmm =              os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_hmm.txt"), #hmm_out
         prep_co_total =    os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.rough_COs_windowsize{winsize,[0-9]+}.txt"), ##prep_co_out
-        prep_co_partial =  os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_rough_COs.breaks.txt"), #prep_co_out
+        prep_co_partial =  os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.rough_COs_windowsize{winsize,[0-9]+}.breaks.txt"), #prep_co_out
         prep_co_smoothed = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.corrected.refined.breaks_windowsize{winsize,[0-9]+}.txt"),
-        refine_A =         os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_rough_COs.refined.recomb.txt"),
-        refine_B =         os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_rough_COs.refined.breaks.txt"),
-        refine_C =         os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_rough_COs.recomb.txt")
+        refine_A =         os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.rough_COs_windowsize{winsize,[0-9]+}.refined.recomb.txt"),
+        refine_B =         os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.rough_COs_windowsize{winsize,[0-9]+}.refined.breaks.txt"),
+        refine_C =         os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.rough_COs_windowsize{winsize,[0-9]+}.recomb.txt")
     group: "per_chrom"
     priority:
         30
@@ -194,8 +194,8 @@ rule tiger_all:
         commandName_hmm = os.path.join(config["individualGenotypes2breaksPath"], "hmm_play.jar"),
         commandName_prep_co = os.path.join(config["individualGenotypes2breaksPath"], "prepare_break.pl"),
         commandNameSmooth_prep_co = os.path.join(config["individualGenotypes2breaksPath"], "breaks_smoother.pl"),
-        commandName_refine = os.path.join(config["individualGenotypes2breaksPath"], "refine_recombination_break.pl")
-        outshort = str(output.hmm_prob_sliding).rsplit("_",2)[0]
+        commandName_refine = os.path.join(config["individualGenotypes2breaksPath"], "refine_recombination_break.pl"),
+        outshort = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_sliding_window.breaks.txt").rsplit("_",2)[0]
     conda:
         config["conda"]
     shell:
