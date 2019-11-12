@@ -249,16 +249,14 @@ rule hmm_prob:
         sliding = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.winsize{winsize}_sliding_window.breaks.txt")
     params:
         commandName = os.path.join(config["individualGenotypes2breaksPath"], "hmm_prob.pl")
+        outshort = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_sliding_window.breaks.txt").rsplit("_",2)[0]
     group: "per_chrom"
     conda:
         config["conda"]
     priority:
         70
     shell:
-        "tmp={output.sliding}; \
-        tmp1=${{tmp%_*}}; \
-        outShort=${{tmp1%_*}}; \
-        perl {params.commandName}  -s {input.freq} -p {input.hmm_prob} -o $outShort -a {input.beta} -c {input.genomeSize}"    # || touch {output.model} {output.sliding}
+        "perl {params.commandName}  -s {input.freq} -p {input.hmm_prob} -o {params.outshort} -a {input.beta} -c {input.genomeSize}"    # || touch {output.model} {output.sliding}
 
 
 ## apply HMM
