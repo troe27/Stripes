@@ -20,14 +20,15 @@ winsize = config["winsize"].split(";")
 
 rule all_complete:
     input:
-        expand(os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{f}.genotype", "{f}.genotype.{chr}.windowsize{winsize}_corrected.refined.breaks.txt"),
+        expand(os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{f}.genotype", "{f}.genotype.{chr}.corrected.refined.breaks_windowsize{winsize}.txt"),
                f=wild, chr=chroms, study = config["indiv"].values(), winsize=winsize),
-        expand(os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{f}.genotype", "{f}.genotype.{chr}.windowsize{winsize}_rough_COs.recomb.txt"),
+        expand(os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{f}.genotype", "{f}.genotype.{chr}.rough_COs_windowsize{winsize}.recomb.txt"),
                f=wild, chr=chroms, study = config["indiv"].values(), winsize=winsize),
-        expand(os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{f}.genotype", "{f}.genotype.flipped.{chr}.windowsize{winsize}_corrected.refined.breaks.txt"),
-               f=wild, chr=chroms, study = config["indiv"].values(), winsize=winsize),
-        expand(os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{f}.genotype", "{f}.genotype.flipped.{chr}.windowsize{winsize}_rough_COs.recomb.txt"),
-               f=wild, chr=chroms, study = config["indiv"].values(), winsize=winsize)
+        expand(os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{f}.genotype", "{f}.genotype.flipped.{chr}.corrected.refined.breaks_windowsize{winsize}.txt"),
+               f=wild, chr=chroms, study = config["indiv"].values(), winsize=winsize),#this actually has to have the winsize flipped like this.
+        expand(os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{f}.genotype", "{f}.genotype.flipped.{chr}.rough_COs_windowsize{winsize}.recomb.txt"),
+               f=wild, chr=chroms, study = config["indiv"].values(), winsize=winsize) #this actually has to have the winsize flipped like this.
+
 
 rule make_contig_names_file:
     input:
@@ -169,12 +170,12 @@ rule tiger_all:
         estimate =         os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_frequencies_for_hmm.txt"), ##estimate_out
         beta =             os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_bmm.intersections.txt"), ##estimate_out
         prep_prob_out =    os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_file_for_probabilities.txt"), ##prep_prob_out
-        hmm_prob_model =   os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_hmm_model"), #hmm_prob_out
+        hmm_prob_model =   os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}hmm_model"), #hmm_prob_out
         hmm_prob_sliding = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_sliding_window.breaks.txt"),
         hmm =              os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_hmm.txt"), #hmm_out
-        prep_co_total =    os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_rough_COs_windowsize.txt"), ##prep_co_out
+        prep_co_total =    os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.rough_COs_windowsize{winsize,[0-9]+}.txt"), ##prep_co_out
         prep_co_partial =  os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_rough_COs.breaks.txt"), #prep_co_out
-        prep_co_smoothed = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_corrected.refined.breaks.txt"),
+        prep_co_smoothed = os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.corrected.refined.breaks_windowsize{winsize,[0-9]+}.txt"),
         refine_A =         os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_rough_COs.refined.recomb.txt"),
         refine_B =         os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_rough_COs.refined.breaks.txt"),
         refine_C =         os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_rough_COs.recomb.txt")
@@ -194,6 +195,7 @@ rule tiger_all:
         commandName_prep_co = os.path.join(config["individualGenotypes2breaksPath"], "prepare_break.pl"),
         commandNameSmooth_prep_co = os.path.join(config["individualGenotypes2breaksPath"], "breaks_smoother.pl"),
         commandName_refine = os.path.join(config["individualGenotypes2breaksPath"], "refine_recombination_break.pl")
+        outshort = str(output.hmm_prob_sliding).rsplit("_",2)[0]
     conda:
         config["conda"]
     shell:
@@ -201,7 +203,7 @@ rule tiger_all:
         "java {params.javaopts} -jar {params.commandNameEstimator}  -r {input.in_1} -o {output.estimate} -n bi -w {params.winsize} &&"
         "Rscript --vanilla {params.commandNameBeta}  {output.estimate}  {output.beta} &&"
         "perl {params.commandName_prep_prob} -s {params.ident} -m {input.in_1} -b {output.caller_out} -c {input.genomeSize} -o {output.prep_prob_out} &&"
-        "tmp={output.hmm_prob_sliding};tmp1=${{tmp%_*}};outShort=${{tmp1%_*}};perl {params.commandName_hmm_prob}  -s {output.estimate} -p {output.prep_prob_out} -o $outShort -a {output.beta} -c {input.genomeSize} &&"
+        "perl {params.commandName_hmm_prob}  -s {output.estimate} -p {output.prep_prob_out} -o {params.outshort} -a {output.beta} -c {input.genomeSize} &&"
         "java -jar {params.commandName_hmm} -r {output.caller_out} -o {output.hmm} -t bi -z {output.hmm_prob_model} &&"
         "perl {params.commandName_prep_co} -s {params.ident} -m {input.in_1} -b {output.hmm} -c  {input.genomeSize} -o {output.prep_co_total} &&"
         "perl {params.commandNameSmooth_prep_co} -b {output.prep_co_partial} -o {output.prep_co_smoothed} &&"
