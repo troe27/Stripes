@@ -2,21 +2,21 @@
 
 ## input
 input_folder:
-  "/home/tilman/nas/stripes_AIL_gg6a"
+  "/home/tilman/optimise_test"
 
 pedigree_file:
-  /home/tilman/nas/pedigree/AIL_pedigree_20190813.tsv
+  /home/tilman/nas/pedigree/AIL_pedigree_20190826.tsv
 phenotype_file:
-  /home/tilman/nas/stripes_AIL_gg6a/F15/bw8_nona.csv
+  /home/tilman/nas/phenotypes/AIL_phenotypes20190827.tsv
 chr_ranks_file:
   /home/tilman/nas/stripes_AIL_gg6a/F15/stripes_data/input_aux/Index_fastq_contig_chr.txt
 ## output:
 outfolder:
-  "home/nas/stripes_AIL_gg6a/stripes2rqtl"
+  "home/optimise_test/str2qtl_out"
 
 ## parameter for format_in_r
 cutoff:
-  10 # minimum number of markers
+  10 # minimum number of markers per bin
 binsize:
   1000000 # size of bins in basepairs, i.e. 1mb
 
@@ -27,6 +27,16 @@ xo_minsize:
 
 ## parameter for make_rqtl_input:
 generation:
-  08
+  02
 jitter:
   0.2
+
+## parameter for make_rqtl_input:
+fill_gap_threshold:
+  3
+
+congruency_offspring_thresh:
+  0.8
+
+congruency_qual_thresh:
+  0.6

@@ -17,9 +17,10 @@ tiger_folder <- args[2]
 chr_ranks_file <- args[3]
 
 ## parameters:
- binsize <- as.numeric(args[4]) #size of bin in bp
- cutoff <- as.numeric(args[5]) # min number of markers per bin
-
+binsize <- as.numeric(args[4]) #size of bin in bp
+cutoff <- as.numeric(args[5]) # min number of markers per bin
+max_num <- as.numeric(args[6]) # maximum number of chromosomes to process, big -> small  #TODO implement this upstream in snakemake
+windowsize <- as.numeric(args[7]) # size of the snp-window used by Stripes #TODO implement this upstream in snakemake
 # output:
 outfile <- args[6]
 
@@ -47,13 +48,13 @@ total <- numeric(length(all_id))
 for( i in 1:nrow(out.put)){
     input_now <- paste0(input_folder,all_genotypes[i])
     total[i] <- nrow(fread(input_now))
-    num_now<- get_density_input(inputfile = input_now,binsize = binsize,cutoff = cutoff, chr.ranks = chr_ranks_table)
+    num_now<- get_density_input(inputfile = input_now,binsize = binsize,cutoff = cutoff, chr.ranks = chr_ranks_table, max_num=max_num)
     out.put[i,] <- wrap_get_density(test =num_now,chr.ranks = chr_ranks_table, binsize=binsize )
     #cat(i, "\n")
 }
 
 density <- apply(out.put,1,mean)
-id.keep <- names(density)[density >5]
+id.keep <- names(density)[density >5] #TODO make this an option for snakemake
 length(density)-length(id.keep)
 
 ################# get Tiger output ########################
@@ -61,9 +62,12 @@ all_vcf <- list.dirs(path = tiger_folder)
 reg_expr <- paste0(tiger_folder,"/", "(\\d+)\\..*") ##gotcha
 id_all <- gsub(pattern = reg_expr,replacement = "\\1",x = all_vcf) #
 index.keep <- which(id_all %in% id.keep)
-all <- list.files(all_vcf,pattern = "\\d+\\.genotype\\.(\\d+)\\.rough_COs\\.refined\\.breaks.txt")
-chr <- sort(as.numeric(unique(gsub(pattern = "\\d+\\.genotype\\.(\\d+)\\.rough_COs\\.refined\\.breaks.txt",replacement = "\\1",x = all))))
-out_3 <- Extract_all(chromosome = chr,id_all = id_all[index.keep],all_vcf = all_vcf[index.keep],gap=3e6,filter = T )
+all <- list.files(all_vcf,pattern = paste0("\\d+\\.genotype\\.(\\d+)\\.rough_COs_windowsize",windowsize,"\\.refined\\.breaks.txt")) # TODO outsource the regex somewhere more exposed
+if(length(all==0)){
+  stop("there are no tiger_files to be processed. check the regex!")  ## for hopefully more informative error messages
+}
+chr <- sort(as.numeric(unique(gsub(pattern = paste0("\\d+\\.genotype\\.(\\d+)\\.rough_COs_windowsize",windowsize,"\\.refined\\.breaks.txt"),replacement = "\\1",x = all)))) # TODO outsource the regex somewhere more exposed
+out_3 <- Extract_all(chromosome = chr,id_all = id_all[index.keep],all_vcf = all_vcf[index.keep], windowsize=windowsize, gap=3e6,filter = T )
 #print(colnames(out_3))
 chr.match <- chr_ranks_table
 length.chr <- ceiling(chr.match$size/binsize)

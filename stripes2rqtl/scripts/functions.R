@@ -2,15 +2,15 @@
 
 
 #####################Extract_all#################################
-Extract_all <- function(chromosome,id_all, all_vcf,gap,filter=T){
+Extract_all <- function(chromosome,id_all, all_vcf,gap,windowsize,filter=T){
   counter = 0
   for( i in 1:length(chromosome)){
 
     if(counter==0){
-      out <-  Extract_by_chr(id_all = id_all,all_vcf = all_vcf,chr = chromosome[i],filter=T,gap=gap)
+      out <-  Extract_by_chr(id_all = id_all,all_vcf = all_vcf,chr = chromosome[i],windowsize=windowsize, filter=T,gap=gap)
 
     }else{
-      out <-  cbind.data.frame(out,Extract_by_chr(id_all = id_all,all_vcf = all_vcf,chr = chromosome[i],gap=gap,filter=T))
+      out <-  cbind.data.frame(out,Extract_by_chr(id_all = id_all,all_vcf = all_vcf,chr = chromosome[i],windowsize=windowsize,gap=gap,filter=T))
     }
     counter <- counter +1
     cat(i,"\n")
@@ -22,14 +22,14 @@ Extract_all <- function(chromosome,id_all, all_vcf,gap,filter=T){
 
 
 #####################Extract_by_chr##############################
-Extract_by_chr <- function(id_all, all_vcf,chr,filter=T,gap=NULL){
+Extract_by_chr <- function(id_all, all_vcf,chr,windowsize,filter=T,gap=NULL){
   if(!require(data.table)){
     require(data.table)
   }
   start <- c()
   end <- c()
   for ( i in 1:length(id_all)){
-    path_co <- paste0(all_vcf[i],"/",id_all[i],".genotype.",chr,".rough_COs.refined.breaks.txt")
+    path_co <- paste0(all_vcf[i],"/",id_all[i],".genotype.",chr,".rough_COs_windowsize",windowsize,".refined.breaks.txt") #TODO new file_formatting breaks these kinda things. maybe expose them in the script rather than in the functions?
     if(file.exists(path_co)){
       co <- data.frame(fread(path_co))
       if(filter){
@@ -56,7 +56,7 @@ Extract_by_chr <- function(id_all, all_vcf,chr,filter=T,gap=NULL){
 
   for( i in 3:(length(id_all)+2)){
     # read in co file
-    path_co <- paste0(all_vcf[i-2],"/",id_all[i-2],".genotype.",chr,".rough_COs.refined.breaks.txt")
+    path_co <- paste0(all_vcf[i-2],"/",id_all[i-2],".genotype.",chr,".rough_COs",windowsize,".refined.breaks.txt") #TODO maybe expose filepaths and regexes in the script rather than in the functions?
     if(file.exists(path_co)){
       co <- data.frame(fread(path_co))
       if(filter)
@@ -145,7 +145,7 @@ wrap_get_density<- function(chr.ranks, binsize ,test){
 
 ########################## Get_density_input ###################################
 
-get_density_input <- function(inputfile,binsize,chr.ranks,cutoff=10, minsize=2000000){
+get_density_input <- function(inputfile,binsize,chr.ranks,cutoff=10, minsize=2000000, max_num="all"){
   # compute the marker density on the input for Tiger
   # NB : This function is only implemented for contigs larger that 2 Mb!
   # takes:
@@ -172,6 +172,9 @@ if(is.character(chr.ranks)){
   ## substitute chromosome names in input file with numeric rank
   input$V1 <- chr.ranks$rank[match(input$V1,chr.ranks$name)]
   ## filter input for chromosome minimum size
+  if(!(max_num =="all")){
+    chr.all <- chr.ranks[1,max_num]
+    }
   chr.all <- chr.ranks$rank[chr.ranks$size>minsize]
   input <- subset(input,subset = input$V1 %in% chr.all)
 
