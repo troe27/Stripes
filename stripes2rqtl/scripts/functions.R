@@ -13,7 +13,7 @@ Extract_all <- function(chromosome,id_all, all_vcf,gap,windowsize,filter=T){
       out <-  cbind.data.frame(out,Extract_by_chr(id_all = id_all,all_vcf = all_vcf,chr = chromosome[i],windowsize=windowsize,gap=gap,filter=T))
     }
     counter <- counter +1
-    cat(i,"\n")
+    #cat(i,"\n")
   }
   return(out)
 }
