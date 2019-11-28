@@ -33,7 +33,8 @@ Extract_by_chr <- function(id_all, all_vcf,chr,windowsize,filter=T,gap=NULL){
     if(file.exists(path_co)){
       co <- data.frame(fread(path_co))
       if(filter){
-        co <- filter_co(co = co,gap=gap)}
+        co <- filter_co(co = co,gap=gap)
+          }
       colnames(co) <- c("V1","V2","V3","V4","V5")
       #check chr
       start <- unique(c(co$V3,start))
@@ -41,9 +42,9 @@ Extract_by_chr <- function(id_all, all_vcf,chr,windowsize,filter=T,gap=NULL){
     }
   }
 
-  boarder <- sort(unique(c(start,end)))
-  pos.start <- boarder[1:c(length(boarder) -1)]
-  pos.end <- boarder[2:length(boarder)]
+  border <- sort(unique(c(start,end)))
+  pos.start <- border[1:c(length(border) -1)]
+  pos.end <- border[2:length(border)]
   pos <- (pos.start + pos.end)/2
   chromosome  <- rep(chr, length(pos))
   bin_name <- paste(chromosome,pos,sep = "-")
@@ -55,19 +56,21 @@ Extract_by_chr <- function(id_all, all_vcf,chr,windowsize,filter=T,gap=NULL){
   holder[2,] <- pos
 
   for( i in 3:(length(id_all)+2)){
+
     # read in co file
-    path_co <- paste0(all_vcf[i-2],"/",id_all[i-2],".genotype.",chr,".rough_COs",windowsize,".refined.breaks.txt") #TODO maybe expose filepaths and regexes in the script rather than in the functions?
+    path_co <- paste0(all_vcf[i-2],"/",id_all[i-2],".genotype.",1,".rough_COs_windowsize",windowsize,".refined.breaks.txt") #TODO maybe expose filepaths and regexes in the script rather than in the functions? #TODO 1->i
     if(file.exists(path_co)){
       co <- data.frame(fread(path_co))
-      if(filter)
+      if(filter){
         co <- filter_co(co = co,gap=gap)
+          }
       colnames(co) <- c("V1","V2","V3","V4","V5")
-
       for( j in 1:nrow(co)){
         id <- findInterval(holder[2,],c(co$V3[j],co$V4[j])) == 1
         holder[i,id] <- rep(co$V5[j],sum(id))
-      }
-    }
+      } #for loop
+    }  # file_exists
+
     #cat(i,"-",nrow(co),rep(co$V5[j],sum(id))[1],"-",length(rep(co$V5[j],sum(id))),"\n")
 
   }
