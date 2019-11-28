@@ -20,7 +20,10 @@ cutoff:
 binsize:
   1000000 # size of bins in basepairs, i.e. 1mb
 
-
+windowsize: # windowsize used by stripes, e.g. which output files to use.
+  500
+max_num: #maximum number of chromosomes to use
+  2
 ## parameter for filter_gt_xo_size
 xo_minsize:
   3
