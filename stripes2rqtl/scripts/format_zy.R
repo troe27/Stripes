@@ -22,7 +22,7 @@ cutoff <- as.numeric(args[5]) # min number of markers per bin
 max_num <- as.numeric(args[6]) # maximum number of chromosomes to process, big -> small  #TODO implement this upstream in snakemake
 windowsize <- as.numeric(args[7]) # size of the snp-window used by Stripes #TODO implement this upstream in snakemake
 # output:
-outfile <- args[6]
+outfile <- args[8]
 
 all_genotypes <- setdiff(list.files(path = input_folder),list.dirs(path = input_folder,full.names = F)) #  extract the name of output
 all_id <- gsub(pattern = "(\\d+)\\.genotype$",replacement = "\\1",x = all_genotypes) # extract the ID
@@ -55,7 +55,7 @@ for( i in 1:nrow(out.put)){
 
 density <- apply(out.put,1,mean)
 id.keep <- names(density)[density >5] #TODO make this an option for snakemake
-length(density)-length(id.keep)
+#length(density)-length(id.keep)
 
 ################# get Tiger output ########################
 all_vcf <- list.dirs(path = tiger_folder)
@@ -63,7 +63,7 @@ reg_expr <- paste0(tiger_folder,"/", "(\\d+)\\..*") ##gotcha
 id_all <- gsub(pattern = reg_expr,replacement = "\\1",x = all_vcf) #
 index.keep <- which(id_all %in% id.keep)
 all <- list.files(all_vcf,pattern = paste0("\\d+\\.genotype\\.(\\d+)\\.rough_COs_windowsize",windowsize,"\\.refined\\.breaks.txt")) # TODO outsource the regex somewhere more exposed
-if(length(all==0)){
+if(length(all)==0){
   stop("there are no tiger_files to be processed. check the regex!")  ## for hopefully more informative error messages
 }
 chr <- sort(as.numeric(unique(gsub(pattern = paste0("\\d+\\.genotype\\.(\\d+)\\.rough_COs_windowsize",windowsize,"\\.refined\\.breaks.txt"),replacement = "\\1",x = all)))) # TODO outsource the regex somewhere more exposed
