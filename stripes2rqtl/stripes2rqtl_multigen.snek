@@ -176,6 +176,6 @@ rule make_rqtl_input:
                         gen_out=output.genotypes,
                         phe_out=output.phenotypes,
                         generation=params.generation,
-                        old_id_pheno=True,
+                        old_id_pheno=False,
                         phenotype=input.phenotypes,
                         jitter=float(params.jitter))

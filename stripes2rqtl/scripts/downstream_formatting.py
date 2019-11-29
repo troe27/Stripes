@@ -11,7 +11,7 @@ from datetime import datetime
 def make_rqtl_input(df, phe_out, gen_out, phenotype,generation="02", old_id_pheno=True, jitter=0.2, phe_id_col="ID", phe_trait_col="BW8"):
     """ makes input files for r/qtl  """
     if isinstance(phenotype, str) ==True:
-         phenotypes_raw = pd.read_csv(phenotype, sep=",")
+         phenotypes_raw = pd.read_csv(phenotype, sep="\t")
     else:
         phenotypes_raw = phenotype
     if old_id_pheno == True:
