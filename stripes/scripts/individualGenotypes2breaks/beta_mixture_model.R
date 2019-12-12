@@ -5,7 +5,6 @@
 args <- commandArgs(trailingOnly = TRUE)
 sliding_window_outcome<-args[1]
 outfile<-args[2]
-
 cutoffs<-function(p1,p2,alpha,beta)
 {
     return(beta(alpha+p1,beta+p2)/beta(alpha,beta));
@@ -139,23 +138,29 @@ main_f<-function(filename)
 	x<-c(1,1,1,1,1,1);
 	
 	
-	
 	counter<-0;
 	v<-c();
 	diff_log=1000000;
 	v_pre = ""
 	while(TRUE & counter < 100)
 	{
-		#cat("counter: ",counter," \n");
+		cat("counter: ",counter," \n");
 		#z<-model.matrix(~0 + as.factor(z));
 		p<-prob(z);
-		#cat("p ",p,"\n");
+		cat("p ",p,"\n");
 		#m-step
 		#v<-nlm(f=mix_beta_model,p=x,data=data,p_=p,z=z)
 		#v<-nlm(f=mix_beta_model,p=x,data=data,p_=p,z=z,print.level=2)
 		v<-m_step(x,data,z,p)
+		cat("oof")
+		print(v)
+		if(is.na(v))
+		{
+                        v<-v_pre;
+                        break;
+		}
 		
-		if(anyNA(v))
+		else if(anyNA(v))
 		{
 			v<-v_pre;
 			break;
@@ -165,7 +170,7 @@ main_f<-function(filename)
 			v_pre<-v;
 		}
 		
-		
+		cat("worksA")
 		if(length(v$estimate[v$estimate>50]))
 		{
 			break;

@@ -2,7 +2,7 @@
 
 ## input
 input_folder:
-  "/home/tilman/nas/stripes_AIL_gg6a"
+  "~/fox/test_data/"
 
 pedigree_file:
   /home/tilman/nas/pedigree/AIL_pedigree_20190813.tsv

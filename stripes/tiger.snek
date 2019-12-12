@@ -103,7 +103,7 @@ rule tabix:
 
 rule sort:
     input:
-        os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}")
+        ancient(os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}"))
     output:
         os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR", "{file}.sorted")
     group: "per_chrom"
@@ -164,7 +164,7 @@ rule estimate:
         commandNameBeta = os.path.join(config["individualGenotypes2breaksPath"], "beta_mixture_model.R"),
         javaopts = config["java_options"]
     conda:
-        config["conda"]
+        config/env_estimate.yaml
     priority:
         4
     shell:
