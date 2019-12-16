@@ -203,13 +203,24 @@ main_f<-function(filename)
 	k[3,]<-dbeta(s,x[2],x[2+3])
 	k[4,]<-dbeta(s,x[3],x[3+3])
 	k<-t(k);
-	t<-k[k[,2]<k[,3] & k[,3]>k[,4],]
-	
-	upper_bound<-max(t[,1])
-	lower_bound<-min(t[,1])
-	
-	upper_bound<-upper_bound*200-100
-	lower_bound<-lower_bound*200-100
+	#LRN: To avoid confusion I changed the name of the matrix t to t1
+	#LRN: To avoid any floating point errors I added a small threshold to be reached before the beta distributions could be considered different
+	#LRN: Added the check that the vector t1 is not empty
+	float.err1 = 1e-12; t1 <- k[ k[,3] - k[,2] > float.err1 & k[,3] - k[,4] > float.err1,] #LRN
+	## Added by tpayen, case we found in our dataset
+	## If there is no recombination in the dataset (scaffold in this case)
+  	## t1 is unidimentional, we check for it
+  	if(!is.null(dim(t1))){
+			      upper_bound<-max(t1[,1])
+    			      upper_bound<-upper_bound*200-100
+    			      lower_bound<-min(t1[,1])
+    			      lower_bound<-lower_bound*200-100
+  			     }
+			else{
+			      upper_bound <- NULL
+    			      lower_bound <- NULL
+  			     }	
+
 	#now we have to take care, if values are to extreme.......
 	#based on expierence
 	if(length(lower_bound)==0 || lower_bound >0)
