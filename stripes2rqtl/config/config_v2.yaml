@@ -12,7 +12,7 @@ chr_ranks_file:
   /home/tilman/nas/stripes_AIL_gg6a/F15/stripes_data/input_aux/Index_fastq_contig_chr.txt
 ## output:
 outfolder:
-  "home/optimise_test/str2qtl_out"
+  "/home/tilman/optimise_test/str2qtl_out"
 
 ## parameter for format_in_r
 cutoff:

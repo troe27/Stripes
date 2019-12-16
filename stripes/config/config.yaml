@@ -16,6 +16,7 @@ sample_file:
   ./config/full_samples.txt
 
 
+
 conda:
   ./config/env.yaml
 
@@ -69,7 +70,7 @@ winsize:
 
 # Number of scaffolds to treat (Take the scaffold numbered (1-scaffoldNumber), the methods is not working well for smaller scaffold
 scaffoldNumber:
-  2
+  30
 
 # The pedigree file (see example for format)
 pedigree:
