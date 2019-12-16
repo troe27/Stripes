@@ -14,10 +14,11 @@ samples = [i.strip("F") for i in os.listdir(config["input_folder"]) if i.startsw
 
 rule all:
     input:
-        expand(os.path.join(config["outfolder"],"F{sample}", "F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+".csv"), sample=samples)
+        expand(os.path.join(config["outfolder"],"F{sample}", "F{sample}_gt_matrix_ws"+str(config["windowsize"])+"_FilteredForBinsize"+str(config["binsize"])+".csv"), sample=samples),
         #genotypes =os.path.join(config["outfolder"], "rqtl_genotypes_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb02.csv") ,
         #phenotypes =os.path.join(config["outfolder"],"rqtl_phenotypes_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb02.csv")
-
+        expand(os.path.join(config["outfolder"],"F{sample}","F{sample}_rqtl_genotypes_ws"+str(config["windowsize"])+"_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb"+str(config["jitter"])+".csv"),sample=samples) ,
+        expand(os.path.join(config["outfolder"],"F{sample}","F{sample}_rqtl_phenotypes_ws"+str(config["windowsize"])+"_FilteredForBinsize"+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb"+str(config["jitter"])+".csv"),sample=samples) ,
 rule remove_empty_genotypes:
     input:
         genotypes = os.path.join(config["input_folder"],"F{sample}","stripes_data/with.fam.f2.call2.Genotype/"),
@@ -50,17 +51,19 @@ rule format_in_r:
         tiger_out = os.path.join(config["input_folder"],"F{sample}","stripes_data/with.fam.f2.call2.TIGER_OUT/"),
         rm_log = os.path.join(config["outfolder"], "F{sample}","F{sample}_empty_genotypes.txt")
     output:
-        os.path.join(config["outfolder"],"F{sample}", "F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+".csv")
+        os.path.join(config["outfolder"],"F{sample}", "F{sample}_gt_matrix_ws"+str(config["windowsize"])+"_FilteredForBinsize"+str(config["binsize"])+".csv")
     params:
         binsize = config["binsize"],
-        cutoff = config["cutoff"]
+        cutoff = config["cutoff"],
+        windowsize = config["windowsize"],
+        max_num = config["max_num"]
     shell:
-        "Rscript --vanilla scripts/format_zy.R  {input.genotypes} {input.tiger_out} {input.chr_ranks} {params.binsize} {params.cutoff} {output}"
+        "Rscript --vanilla scripts/format_zy.R  {input.genotypes} {input.tiger_out} {input.chr_ranks} {params.binsize} {params.cutoff} {params.max_num} {params.windowsize} {output}"
 
 rule combine_datasets:
     """ """
     input:
-        genotype = expand(os.path.join(config["outfolder"],"F{sample}", "F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+".csv"), sample=samples),
+        genotype = expand(os.path.join(config["outfolder"],"F{sample}", "F{sample}_gt_matrix_ws"+str(config["windowsize"])+"_FilteredForBinsize"+str(config["binsize"])+".csv"), sample=samples),
         pedigree = config["pedigree_file"]
     output:
         os.path.join(config["outfolder"],
@@ -128,9 +131,9 @@ rule make_combined_rqtl_input:
 rule filter_gt_xo_size:
     """ set all crossovers below 3 mb in size to missing."""
     input:
-        genotypes = os.path.join(config["outfolder"],"F{sample}","F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+".csv"),
+        genotypes = os.path.join(config["outfolder"],"F{sample}","F{sample}_gt_matrix_ws"+str(config["windowsize"])+"_FilteredForBinsize"+str(config["binsize"])+".csv"),
     output:
-        outfile = os.path.join(config["outfolder"], "F{sample}","F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+".csv"),
+        outfile = os.path.join(config["outfolder"], "F{sample}","F{sample}_gt_matrix_ws"+str(config["windowsize"])+"_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+".csv"),
     params:
         cutoff = config["xo_minsize"]
     run:
@@ -148,11 +151,11 @@ rule make_rqtl_input:
     format output for R/qtl.
     """
     input:
-        genotypes = os.path.join(config["outfolder"],"F{sample}","F{sample}_gt_matrix_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+".csv"),
+        genotypes = os.path.join(config["outfolder"],"F{sample}","F{sample}_gt_matrix_ws"+str(config["windowsize"])+"_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+".csv"),
         phenotypes = config["phenotype_file"]
     output:
-        genotypes =os.path.join(config["outfolder"],"F{sample}","F{sample}_rqtl_genotypes_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb02.csv") ,
-        phenotypes =os.path.join(config["outfolder"],"F{sample}","F{sample}_rqtl_phenotypes_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb02.csv") ,
+        genotypes =os.path.join(config["outfolder"],"F{sample}","F{sample}_rqtl_genotypes_ws"+str(config["windowsize"])+"_FilteredForBinsize"+str(config["binsize"])+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb"+str(config["jitter"])+".csv") ,
+        phenotypes =os.path.join(config["outfolder"],"F{sample}","F{sample}_rqtl_phenotypes_ws"+str(config["windowsize"])+"_FilteredForBinsize"+"_FilteredForXO"+str(config["xo_minsize"])+"removedAmb"+str(config["jitter"])+".csv") ,
     params:
         generation = "{sample}",
         jitter = config["jitter"]
@@ -173,6 +176,6 @@ rule make_rqtl_input:
                         gen_out=output.genotypes,
                         phe_out=output.phenotypes,
                         generation=params.generation,
-                        old_id_pheno=True,
+                        old_id_pheno=False,
                         phenotype=input.phenotypes,
                         jitter=float(params.jitter))

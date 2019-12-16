@@ -11,7 +11,7 @@ from datetime import datetime
 def make_rqtl_input(df, phe_out, gen_out, phenotype,generation="02", old_id_pheno=True, jitter=0.2, phe_id_col="ID", phe_trait_col="BW8"):
     """ makes input files for r/qtl  """
     if isinstance(phenotype, str) ==True:
-         phenotypes_raw = pd.read_csv(phenotype, sep=",")
+         phenotypes_raw = pd.read_csv(phenotype, sep="\t")
     else:
         phenotypes_raw = phenotype
     if old_id_pheno == True:
@@ -66,3 +66,26 @@ def make_rqtl_geno_input(df, outfile, jitter=0.2):
         handle.write(first_line+"\n")
         handle.write(chrom+"\n")
         handle.write("\n".join(t))
+
+
+def remove_ambigous_sites(df):
+    df = df.fillna("NA")  # fill NaNs with "NA
+
+    def remove_amb(x):
+        """ remove ambiguous calls and format to 1/0/-1/NA only """
+        if x=="NA":
+            return x
+        elif x >= 1.0-jitter:
+            return int(1)
+        elif 1.0-jitter>= x >0.0+jitter:
+            return "NA"
+        elif 0.0+jitter >= x >0.0-jitter:
+            return int(0)
+        elif 0.0-jitter >= x > -1.0+jitter:
+            return "NA"
+        elif x<= -1.0+jitter:
+            return int(-1)
+    df = df.applymap(remove_amb)
+    df.replace("NA", np.nan)
+    return df
+    

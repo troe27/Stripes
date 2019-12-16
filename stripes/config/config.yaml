@@ -16,6 +16,7 @@ sample_file:
   ./config/full_samples.txt
 
 
+
 conda:
   ./config/env.yaml
 
@@ -27,7 +28,7 @@ founders:
   /home/tilman/nas/all_GQ20_MQ50_noIndels_callrate0.3.vcf
 
 TIGER_WD:
-  /home/tilman/nas/stripes_flip_chromosome
+  /home/tilman/optimise_test
 
 CALL_WD:
   VCF
