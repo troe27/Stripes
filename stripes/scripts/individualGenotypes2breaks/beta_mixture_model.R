@@ -1,5 +1,5 @@
 #
-# 
+#
 # Author: patel
 ###############################################################################
 args <- commandArgs(trailingOnly = TRUE)
@@ -15,7 +15,7 @@ beta_prob<-function(y,alpha_v,beta_v)
 {
 	alpha_v[alpha_v==0]=100000000
 	beta_v[beta_v==0] = 100000000
-	
+
 	#print(alpha_v)
 	#print(beta_v)
 	return ((y^(alpha_v-1)*(1-y)^(beta_v-1))/beta(alpha_v, beta_v))
@@ -35,7 +35,7 @@ mix_beta_model_log_function<-function(x,data,z,p_)
 	alpha<-x[1:3];
 	beta<-x[4:6];
 	#total_sum<-c();
-	local_sum<-sapply(data,beta_prob_2,alpha=x[1:3],beta=x[4:6],p=p_[])	
+	local_sum<-sapply(data,beta_prob_2,alpha=x[1:3],beta=x[4:6],p=p_[])
 	ll<-sum(t(local_sum)*z)*-1
 	return(ll)
 }
@@ -49,7 +49,7 @@ mix_beta_model<-function(x,data,z,p_)
 	#print(x)
 	midterm<-c();
 	for(j in 1:3)
-	{			
+	{
 		local_sum<-0;
 		local_sum<-log(beta_prob(data,alpha[j],beta[j]))
 		#print (log(beta_prob(data,alpha[j],beta[j])))
@@ -58,7 +58,7 @@ mix_beta_model<-function(x,data,z,p_)
 	}
 	ll<-sum(z*midterm)*(-1);
 	#ll<-sumi*(-1);
-	return (ll);	
+	return (ll);
 }
 
 
@@ -95,7 +95,7 @@ m_step<-function(x,data,z,p)
                                         #print(cond)
         return(NULL)
     },
-    finally={}			
+    finally={}
     )
     return (v);
 }
@@ -103,9 +103,9 @@ m_step<-function(x,data,z,p)
 
 main_f<-function(filename)
 {
-	
+
 	d<-read.table(filename);
-	
+
 	#sample down to 50%
 	k<-as.data.frame(table(d[,3]))
 	k[,2]<-k[,2]*0.5
@@ -116,13 +116,13 @@ main_f<-function(filename)
 	data[data==1] = 1-0.00001
 	#d[,3]<-d[,3]+100
 	#d[,3]<-d[,3]/200
-	#d[d[,3]==0,3]<-0.00001 #beta function is not defined at 0 and 1 
+	#d[d[,3]==0,3]<-0.00001 #beta function is not defined at 0 and 1
 	#d[d[,3]==1,3]<-1-0.00001
-	
+
 	#data<-d[,3];
 	z<-c();
-	
-	
+
+
 	z<-matrix(0,length(data),3)
 	for(i in 1:length(data))
 	{
@@ -137,9 +137,9 @@ main_f<-function(filename)
 		}
 	}
 	x<-c(1,1,1,1,1,1);
-	
-	
-	
+
+
+
 	counter<-0;
 	v<-c();
 	diff_log=1000000;
@@ -154,7 +154,7 @@ main_f<-function(filename)
 		#v<-nlm(f=mix_beta_model,p=x,data=data,p_=p,z=z)
 		#v<-nlm(f=mix_beta_model,p=x,data=data,p_=p,z=z,print.level=2)
 		v<-m_step(x,data,z,p)
-		
+
 		if(anyNA(v))
 		{
 			v<-v_pre;
@@ -164,13 +164,13 @@ main_f<-function(filename)
 		{
 			v_pre<-v;
 		}
-		
-		
+
+
 		if(length(v$estimate[v$estimate>50]))
 		{
 			break;
 		}
-		
+
 		#v<-nlm(f=mix_beta_model_log_function,p=x,data=data,p_=p,z=z)
 		#e-step
 		#z<-e_step(v$par,data,p)
@@ -183,7 +183,7 @@ main_f<-function(filename)
 		diff_log<-v$minimum;
 		counter<-counter+1;
 		#cat(v)
-		#produce the histogram 
+		#produce the histogram
 	}
 	#return (v)
 	#while
@@ -196,40 +196,50 @@ main_f<-function(filename)
 	k[1,]<-s
 	k[2,]<-dbeta(s,x[1],x[1+3])
 	k[3,]<-dbeta(s,x[2],x[2+3])
-	k[4,]<-dbeta(s,x[3],x[3+3])
-	k<-t(k);
-	t<-k[k[,2]<k[,3] & k[,3]>k[,4],]
-	
-	upper_bound<-max(t[,1])
-	lower_bound<-min(t[,1])
-	
-	upper_bound<-upper_bound*200-100
-	lower_bound<-lower_bound*200-100
+  k[4,]<-dbeta(s,x[3],x[3+3])
+  k<-t(k);
+  #LRN: To avoid confusion I changed the name of the matrix t to t1
+  #LRN: To avoid any floating point errors I added a small threshold to be reached before the beta distributions could be considered different
+  #LRN: Added the check that the vector t1 is not empty
+  #t<-k[k[,2]<k[,3] & k[,3]>k[,4],] #LRN
+  float.err1 = 1e-12; t1 <- k[ k[,3] - k[,2] > float.err1 & k[,3] - k[,4] > float.err1,] #LRN
+  ## Added by tpayen, case we found in our dataset
+  ## If there is no recombination in the dataset (scaffold in this case)
+  ## t1 is unidimentional, we check for it
+  if(!is.null(dim(t1))){
+    upper_bound<-max(t1[,1])
+    upper_bound<-upper_bound*200-100
+    lower_bound<-min(t1[,1])
+    lower_bound<-lower_bound*200-100
+  }else{
+    upper_bound <- NULL
+    lower_bound <- NULL
+  }
 	#now we have to take care, if values are to extreme.......
 	#based on expierence
 	if(length(lower_bound)==0 || lower_bound >0)
 	{
 		lower_bound<--25;
-		
+
 	}else if(lower_bound < -75)
 	{
 		lower_bound<- -50;
 	}
-	
+
 	if(length(upper_bound)==0 || upper_bound> 90)
 	{
-		upper_bound<-50;
+		upper_bound<- 50;
 	}else if(upper_bound < 10)
 	{
 		upper_bound<- 25;
 	}
-	
+
 	border_matrix<-matrix(0,2,1)
 	border_matrix[1,]<-lower_bound
 	border_matrix[2,]<-upper_bound
 	write.table( border_matrix, sep="\n", file=outfile, row.names=F,col.names=F)
-	
-	
+
+
 }
 main_f(sliding_window_outcome)
 
