@@ -17,7 +17,7 @@ chroms = [e for e in range(1, int(config["scaffoldNumber"])+1)]
 winsize = config["winsize"].split(";")
 #print("There are ", len(wild), " individuals to be treated")
 
-wild = wild[:2]
+wild = wild[20:100]
 
 rule all_complete:
     input:
