@@ -13,7 +13,7 @@ Raw_Folder:
 # file containing all sample wildcards, in case no individual input files are there anymore
 # TODO have this derived from the VCF samples ?
 sample_file:
-  ./config/full_samples.txt
+  ./config/100_samples.txt
 
 
 
@@ -25,16 +25,16 @@ python:
 
 # The VCF file of founders (created separatly with a more classic approach, in our case GATK and a joined call)
 founders:
-  /home/tilman/nas/all_GQ20_MQ50_noIndels_callrate0.3.vcf
+  /home/tilman/storage2/stripes_optimise/aux/all_GQ20_MQ50_noIndels_callrate0.3.vcf
 
 TIGER_WD:
-  /home/tilman/optimise_test
+  /home/tilman/storage2/stripes_optimise
 
 CALL_WD:
   VCF
 
 cohort:
-  /home/tilman/nas/stripes_AIL_gg6a/F2/stripes_input/all_f2_only_founder_snps_w49_no_duplicates_propernames.vcf
+  /home/tilman/storage2/stripes_optimise/aux/all_f2_only_founder_snps_w49_no_duplicates_propernames.vcf 
 
 # Was used to test the difference of quality in pipeline using markers fixed in family and in line
 indiv:
@@ -58,7 +58,7 @@ TIGER_SUFFIX:
 
 # A file with the chromosomes and their size in base (see example)
 genomeSizeFile:
-  /home/tilman/nas/stripes_AIL_gg6a/F3/stripes_data/data/size.genome
+  /home/tilman/storage2/stripes_optimise/aux/size.genome
 
 # java options for rule caller and rule estimate:
 java_options:
@@ -66,7 +66,7 @@ java_options:
 
 # Number of SNP per windows, either single value or semicolon separated list
 winsize:
-  25;50;100;200;500
+  50;200;500
 
 # Number of scaffolds to treat (Take the scaffold numbered (1-scaffoldNumber), the methods is not working well for smaller scaffold
 scaffoldNumber:
@@ -74,10 +74,10 @@ scaffoldNumber:
 
 # The pedigree file (see example for format)
 pedigree:
-  /home/tilman/nas/pedigree/AIL_pedigree_20190826.tsv
+  /home/tilman/storage2/stripes_optimise/aux/pedigree/AIL_pedigree_20190826.tsv
 # File containing the full names (from the reference, a rank (col 3) and the size of the chromosomes
 contigNames:
-  /home/tilman/nas/stripes_AIL_gg6a/F3/stripes_data/input_aux/Index_fastq_contig_chr.txt
+  /home/tilman/storage2/stripes_optimise/aux/Index_fastq_contig_chr.txt
 
 
 # If not in the script folder use an absolute path
@@ -85,8 +85,8 @@ individualGenotypes2breaksPath:
   scripts/individualGenotypes2breaks
 
 high:
-  /home/tilman/nas/stripes_AIL_gg6a/F3/stripes_data/input_aux/high_full.txt
+  /home/tilman/storage2/stripes_optimise/aux/high_full.txt
 low:
-  /home/tilman/nas/stripes_AIL_gg6a/F3/stripes_data/input_aux/low_full.txt
+  /home/tilman/storage2/stripes_optimise/aux/low_full.txt
 generation:
   2

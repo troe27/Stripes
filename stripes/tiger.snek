@@ -111,7 +111,7 @@ rule tabix:
 
 rule sort:
     input:
-        os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}")
+        ancient(os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}"))
     output:
         os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR", "{file}.sorted")
     group: "per_chrom"
@@ -122,8 +122,8 @@ rule sort:
 
 rule short:
     input:
-        gtfile = rules.sort.output,
-        index = config["contigNames"]
+        gtfile = ancient(rules.sort.output),
+        index = ancient(config["contigNames"])
     output:
         expand(os.path.join(config["TIGER_WD"], "{{study}}" + config["GENOTYPE_SUFFIX"], "{{file}}_DIR","{{file}}.chr.{chr_num}"), chr_num=chroms)
     params:
@@ -139,10 +139,11 @@ rule short:
 
 rule flip_chromosome:
     input:
-        size_file =  config["contigNames"],
-        genotype = os.path.join(config["TIGER_WD"], "{study}"+str(config["GENOTYPE_SUFFIX"]),"{file}_DIR","{file}.chr.{chr}")
+        size_file =  ancient(config["contigNames"]),
+        genotype = ancient(os.path.join(config["TIGER_WD"], "{study}"+str(config["GENOTYPE_SUFFIX"]),"{file}_DIR","{file}.chr.{chr}"))
     output:
         genotype = os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR","{file}.flipped.chr.{chr}")
+    group: "per_chrom"
     run:
         import pandas as pd
         # get size in bp for chromosome
@@ -163,8 +164,8 @@ rule flip_chromosome:
 ####### TIGER PIPELINE #######
 rule tiger_all:
     input:
-        in_1 = os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR","{file2}.chr.{chr}"),
-        genomeSize = config["genomeSizeFile"], ##prep_prob
+        in_1 = ancient(os.path.join(config["TIGER_WD"], "{study}" + config["GENOTYPE_SUFFIX"], "{file}_DIR","{file2}.chr.{chr}")),
+        genomeSize = ancient(config["genomeSizeFile"]), ##p  rep_prob
     output:
         caller_out =       os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_allele_co.txt"), ##caller_out
         estimate =         os.path.join(config["TIGER_WD"], "{study}" + config["TIGER_SUFFIX"], "{file}", "{file2}.{chr}.windowsize{winsize,[0-9]+}_frequencies_for_hmm.txt"), ##estimate_out

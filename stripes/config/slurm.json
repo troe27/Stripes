@@ -1,7 +1,7 @@
 {
     "__default__" :
     {
-        "profile" : "snic2018-3-170",
+        "profile" : "snic2019-3-143",
         "hours": 8,
         "days": 0
     },
@@ -11,9 +11,15 @@
         "hours" : 72
     },
 
+    "tiger_all" :
+    {
+        "hours" : 8
+    },
+
+
     "per_chrom" :
     {
-        "profile" : "snic2018-3-170",
+        "profile" : "snic2019-3-143",
         "hours" : 8,
         "days": 0
     },
