@@ -3,7 +3,7 @@
 #make genotype matrix and filter for all bins that have fewer than 10 markers.
 ## this script contains quite a few sample specific regular expressions & will likely break at some point.
 ## Heres to hoping that i will replace it with something generic before it does.
-source("./scripts/functions.R")
+source("./scripts/modified_functions.R")
 library("data.table")
 args = commandArgs(trailingOnly=TRUE)
 

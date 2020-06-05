@@ -253,58 +253,83 @@ filter_co <- function(co,gap=10e6){
 ################################################################################
 
 ##################### Mat2geno #################################################
-
 Mat2geno <- function(out=out_fam,id=idv.reliable,binsize=1e6,length.chr){
-
-  chr  <- as.vector(t(out[1,]))
-  pos <- as.vector(t(out[2,]))
-  chr.lev <- as.character(sort(as.numeric(unique(chr))))
-  out.idv <- out[id,]
-  #Create out put holder
-  #dime <- c(length(id),sum(length.chr[as.numeric(chr.lev)])*1e6/binsize)
-  #output <- data.frame(array(NA,dime))
-  for( i in 1:length(chr.lev)){
-    index <- chr==chr.lev[i]
-    out.idv.now <- out.idv[,index, drop=FALSE]
-    pos.now <- pos[index]
-    vec <- seq(0,length.chr[chr.lev[i]]*binsize,by=binsize)
-    index.bin <- findInterval(pos.now,vec)
-    # create holder
-    if(i==1){
-      #if(i==1 ){
-      out.put <- data.frame(array(NA,c(length(id),length(unique(index.bin)))))
-      colnames(out.put) <- paste0(chr.lev[i],"-",unique(index.bin))
-      rownames(out.put) <- id
-      for( j in 1:nrow(out.idv.now)){
-        # fill in genotype
-        # set to numeric
-        geno <- gsub(pattern = "CC",replacement = 1,out.idv.now[j,])
-        geno <- gsub(pattern = "LL",replacement = -1,geno)
-        geno <- gsub(pattern = "CL",replacement = 0,geno)
-        geno <- aggregate(as.numeric(geno),by=list("index"=index.bin),FUN= function(x) return(mean(x,na.rm=T)))
-        rownames(geno) <- geno[,1]
-        out.put[j,] <- geno[as.character(unique(index.bin)),2]
-        #cat(i,"_",j,"\n")
-      }
-
-    }else{
-      out.put1 <- data.frame(array(NA,c(length(id),length(unique(index.bin)))))
-      colnames(out.put1) <- paste0(chr.lev[i],"-",unique(index.bin))
-      rownames(out.put1) <- id
-      for( j in 1:nrow(out.idv.now)){
-        geno <- gsub(pattern = "CC",replacement = 1,out.idv.now[j,])
-        geno <- gsub(pattern = "LL",replacement = -1,geno)
-        geno <- gsub(pattern = "CL",replacement = 0,geno)
-        geno <- aggregate(as.numeric(geno),by=list("index"=index.bin),FUN= function(x) return(mean(x,na.rm=T)))
-        rownames(geno) <- geno[,1]
-        out.put1[j,] <- geno[as.character(unique(index.bin)),2]
-        #cat(i,"_",j,"\n")
-      }
-      out.put <- cbind(out.put,out.put1)
-    }
-  }
-  return(out.put)
+    chr  <- as.vector(t(out[1,]))
+    pos <- as.vector(t(out[2,]))
+    chr.lev <- as.character(sort(as.numeric(unique(chr))))
+    out.idv <- out[id,]
+    #Create out put holder
+    #dime <- c(length(id),sum(length.chr[as.numeric(chr.lev)])*1e6/binsize)
+    #output <- data.frame(array(NA,dime))
+    for( i in 1:length(chr.lev)){
+        print("this is chrom")
+        print(i)
+        index <- chr==chr.lev[i]
+        out.idv.now <- out.idv[,index]
+        pos.now <- pos[index]
+        vec <- seq(0,length.chr[chr.lev[i]]*binsize,by=binsize)
+        index.bin <- findInterval(pos.now,vec)
+        # create holder
+        if(i==1){
+            out.put <- data.frame(array(NA,c(length(id),length(unique(index.bin)))))
+            colnames(out.put) <- paste0(chr.lev[i],"-",unique(index.bin))
+            rownames(out.put) <- id
+            for( j in 1:nrow(out.idv.now)){
+                # fill in genotype
+                # set to numeric
+                geno <- gsub(pattern = "CC",replacement = 1,out.idv.now[j,])
+                geno <- gsub(pattern = "LL",replacement = -1,geno)
+                geno <- gsub(pattern = "CL",replacement = 0,geno)
+                geno <- aggregate(as.numeric(geno),by=list("index"=index.bin),FUN= function(x) return(mean(x,na.rm=T)))
+                rownames(geno) <- geno[,1]
+                out.put[j,] <- geno[as.character(unique(index.bin)),2]
+                #cat(i,"_",j,"\n")
+           }    # END FOR
+         
+        }
+        else{
+            out.put1 <- data.frame(array(NA,c(length(id),length(unique(index.bin)))))
+            colnames(out.put1) <- paste0(chr.lev[i],"-",unique(index.bin))
+            rownames(out.put1) <- id
+	    print("this is nrow")
+	    print(nrow(out.idv.now))
+            if(is.null(nrow(out.idv.now))){
+		print(out.idv.now)
+		print(dim(out.idv.now))
+		print("trying geno...")
+                geno <- gsub(pattern = "CC",replacement = 1,out.idv.now[,])
+    		          print(geno)
+                geno <- gsub(pattern = "LL",replacement = -1,geno)
+                geno <- gsub(pattern = "CL",replacement = 0,geno)
+    		          geno <- aggregate(as.numeric(geno),by=list("index"=index.bin),FUN= function(x) return(mean(x,na.rm=T)))
+    			            rownames(geno) <- geno[,1]
+    				              out.put1 <- geno[as.character(unique(index.bin)),2]
+            }    # END IF
+            else{
+                for( j in 1:nrow(out.idv.now)){
+    		              print("this is j")
+    	            print(j)
+		    print(dim(j))
+		    print(dim(out.idv.now))
+                    geno <- gsub(pattern = "CC",replacement = 1,out.idv.now[j,])
+                    geno <- gsub(pattern = "LL",replacement = -1,geno)
+                    geno <- gsub(pattern = "CL",replacement = 0,geno)
+    		                  print(i)
+    				                print(j)
+    						              print("works_up_to_here")
+                    geno <- aggregate(as.numeric(geno),by=list("index"=index.bin),FUN= function(x) return(mean(x,na.rm=T)))
+                    rownames(geno) <- geno[,1]
+                    out.put1[j,] <- geno[as.character(unique(index.bin)),2]
+                    #cat(i,"_",j,"\n")
+                } # END FOR LOOP
+            } # END ELSE
+            out.put <- cbind(out.put,out.put1)   
+       } # END ELSE
+   } # END FOR
+   return(out.put)
 }
+
+
 ########################################################################################################
 
 ################################## Remove_het_mat ######################################################
